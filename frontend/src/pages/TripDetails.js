@@ -117,7 +117,8 @@ export default function TripDetails() {
         setCommentForm({ comment: '' });
         setShowCommentForm(false);
       } else {
-        alert(data.message || 'Failed to add comment');
+        const errData = await response.json();
+        alert(errData.message || 'Failed to add comment');
       }
     } catch (error) {
       console.error('Comment error:', error);
@@ -162,7 +163,8 @@ export default function TripDetails() {
         setReviewForm({ rating: 5, review: '' });
         setShowReviewForm(false);
       } else {
-        alert(data.message || 'Failed to add review');
+        const errData = await response.json();
+        alert(errData.message || 'Failed to add review');
       }
     } catch (error) {
       console.error('Review error:', error);
