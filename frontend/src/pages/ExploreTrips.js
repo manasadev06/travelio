@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './ExploreTrips.css';
+import api from '../api/api';
 
 export default function ExploreTrips() {
   const { user, isAuthenticated } = useAuth();
@@ -31,24 +31,21 @@ export default function ExploreTrips() {
         params.append('destination', destinationFilter);
       }
 
-      const response = await fetch(`http://localhost:5000/api/trips?${params}`);
-      const data = await response.json();
+      const response = await api.get(`/trips?${params}`);
+      const data = response.data;
 
-      if (response.ok) {
-        if (reset) {
-          setTrips(data.trips);
-        } else {
-          setTrips(prev => [...prev, ...data.trips]);
-        }
-        setTotalPages(data.pagination.total_pages);
-        setTotalItems(data.pagination.total_items);
-        setCurrentPage(data.pagination.current_page);
+      if (reset) {
+        setTrips(data.trips);
       } else {
-        setError(data.message || 'Failed to fetch trips');
+        setTrips(prev => [...prev, ...data.trips]);
       }
+      setTotalPages(data.pagination.total_pages);
+      setTotalItems(data.pagination.total_items);
+      setCurrentPage(data.pagination.current_page);
+
     } catch (error) {
       console.error('Fetch trips error:', error);
-      setError('Network error. Please try again.');
+      setError(error.response?.data?.message || 'Failed to fetch trips');
     } finally {
       setLoading(false);
     }
@@ -70,20 +67,17 @@ export default function ExploreTrips() {
         limit: 12
       });
 
-      const response = await fetch(`http://localhost:5000/api/search/trips?${params}`);
-      const data = await response.json();
+      const response = await api.get(`/search/trips?${params}`);
+      const data = response.data;
 
-      if (response.ok) {
-        setTrips(data.trips);
-        setTotalPages(data.pagination.total_pages);
-        setTotalItems(data.pagination.total_items);
-        setCurrentPage(data.pagination.current_page);
-      } else {
-        setError(data.message || 'Search failed');
-      }
+      setTrips(data.trips);
+      setTotalPages(data.pagination.total_pages);
+      setTotalItems(data.pagination.total_items);
+      setCurrentPage(data.pagination.current_page);
+
     } catch (error) {
       console.error('Search error:', error);
-      setError('Search failed. Please try again.');
+      setError(error.response?.data?.message || 'Search failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -101,251 +95,184 @@ export default function ExploreTrips() {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/trips/${tripId}/like`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await api.post(`/trips/${tripId}/like`);
+      const data = response.data;
 
-      if (response.ok) {
-        const data = await response.json();
-        // Update the trip in the local state
-        setTrips(prev => prev.map(trip => {
-          if (trip.id === tripId) {
-            return {
-              ...trip,
-              user_liked: data.liked,
-              like_count: data.liked ? trip.like_count + 1 : trip.like_count - 1
-            };
-          }
-          return trip;
-        }));
-      }
+      setTrips(prev => prev.map(trip => {
+        if (trip.id === tripId) {
+          return {
+            ...trip,
+            user_liked: data.liked,
+            like_count: data.liked ? trip.like_count + 1 : trip.like_count - 1
+          };
+        }
+        return trip;
+      }));
     } catch (error) {
       console.error('Like error:', error);
-    }
-  };
-
-  const handleFilterChange = () => {
-    setCurrentPage(1);
-    fetchTrips(1, true);
-  };
-
-  const handleSortChange = (newSort) => {
-    setSortBy(newSort);
-    setCurrentPage(1);
-    fetchTrips(1, true);
-  };
-
-  const loadMore = () => {
-    if (currentPage < totalPages) {
-      fetchTrips(currentPage + 1, false);
+      alert(error.response?.data?.message || 'Failed to like trip');
     }
   };
 
   useEffect(() => {
     fetchTrips(1, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy, destinationFilter]);
 
-  const renderStars = (rating) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 0; i < 5; i++) {
-      if (i < fullStars) {
-        stars.push(<span key={i} className="star filled">⭐</span>);
-      } else if (i === fullStars && hasHalfStar) {
-        stars.push(<span key={i} className="star half">⭐</span>);
-      } else {
-        stars.push(<span key={i} className="star empty">⭐</span>);
-      }
-    }
-    return stars;
-  };
-
   return (
-    <div className="explore-trips-page">
-      <div className="container">
-        <div className="explore-header">
-          <h1>🌍 Explore Trips</h1>
-          <p>Discover amazing travel experiences shared by our community</p>
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="container mx-auto px-4 max-w-7xl">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">Explore Trips</h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">Discover amazing itineraries from travelers around the world</p>
         </div>
-
-        {/* Search and Filters */}
-        <div className="search-filters">
-          <form onSubmit={handleSearch} className="search-form">
-            <div className="search-input-group">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search trips, destinations..."
-                className="search-input"
-              />
-              <button type="submit" className="btn btn-primary">
-                🔍 Search
+        
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-10">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+            <form onSubmit={handleSearch} className="flex-1 w-full flex gap-4">
+              <div className="relative flex-grow">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search by title or destination..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all outline-none"
+                />
+              </div>
+              <button 
+                type="submit" 
+                className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md hover:shadow-lg"
+              >
+                Search
               </button>
-            </div>
-          </form>
+            </form>
 
-          <div className="filters">
-            <div className="filter-group">
-              <label>Destination</label>
-              <input
-                type="text"
-                value={destinationFilter}
-                onChange={(e) => setDestinationFilter(e.target.value)}
-                placeholder="Filter by destination"
-                className="filter-input"
-              />
-            </div>
-
-            <div className="filter-group">
-              <label>Sort By</label>
-              <select
-                value={sortBy}
-                onChange={(e) => handleSortChange(e.target.value)}
-                className="filter-select"
+            <div className="w-full md:w-auto">
+              <select 
+                value={sortBy} 
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full md:w-48 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all outline-none bg-white cursor-pointer"
               >
                 <option value="created_at">Latest</option>
-                <option value="average_rating">Top Rated</option>
                 <option value="like_count">Most Liked</option>
-                <option value="comment_count">Most Discussed</option>
+                <option value="average_rating">Top Rated</option>
               </select>
             </div>
-
-            {isAuthenticated && user?.role === 'creator' && (
-              <Link to="/upload-trip" className="btn btn-primary">
-                📝 Upload Trip
-              </Link>
-            )}
           </div>
         </div>
 
-        {/* Results Summary */}
-        {totalItems > 0 && (
-          <div className="results-summary">
-            <p>Found {totalItems} amazing trips</p>
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md mb-8">
+            <p className="text-red-700">{error}</p>
           </div>
         )}
 
-        {/* Error Message */}
-        {error && <div className="alert alert-error">{error}</div>}
-
-        {/* Loading State */}
-        {loading && currentPage === 1 && (
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Loading amazing trips...</p>
+        {loading && trips.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-teal-600 rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-500 font-medium">Loading amazing trips...</p>
           </div>
-        )}
-
-        {/* Trips Grid */}
-        {!loading && trips.length > 0 && (
-          <div className="trips-grid">
-            {trips.map((trip) => (
-              <div key={trip.id} className="trip-card">
-                <Link to={`/trip/${trip.id}`} className="trip-link">
-                  <div className="trip-image">
-                    {trip.cover_image_url ? (
-                      <img src={trip.cover_image_url} alt={trip.title} />
-                    ) : (
-                      <div className="trip-image-placeholder">
-                        🌍 {trip.destination}
-                      </div>
-                    )}
-                  </div>
+        ) : (
+          <>
+            {trips.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100">
+                <div className="text-5xl mb-4">🌍</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">No trips found</h3>
+                <p className="text-gray-500 mb-6">Be the first to share your adventure!</p>
+                <Link to="/upload-trip" className="inline-block bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md hover:shadow-lg">
+                  Create Trip
                 </Link>
-
-                <div className="trip-content">
-                  <div className="trip-header">
-                    <h3 className="trip-title">{trip.title}</h3>
-                    <div className="trip-destination">
-                      📍 {trip.destination}
-                    </div>
-                  </div>
-
-                  <div className="trip-meta">
-                    <span className="trip-duration">📅 {trip.duration} days</span>
-                    <span className="trip-creator">
-                      by <Link to={`/user/${trip.creator_id}`}>{trip.creator_name}</Link>
-                    </span>
-                  </div>
-
-                  <p className="trip-description">
-                    {trip.description.length > 150
-                      ? `${trip.description.substring(0, 150)}...`
-                      : trip.description}
-                  </p>
-
-                  <div className="trip-stats">
-                    <div className="stat-item">
-                      <span className="stat-icon">⭐</span>
-                      <span className="stat-value">
-                        {trip.average_rating > 0 ? trip.average_rating.toFixed(1) : 'New'}
-                      </span>
-                      {trip.review_count > 0 && (
-                        <span className="stat-count">({trip.review_count})</span>
-                      )}
-                    </div>
-
-                    <div className="stat-item">
-                      <span className="stat-icon">❤️</span>
-                      <span className="stat-value">{trip.like_count}</span>
-                    </div>
-
-                    <div className="stat-item">
-                      <span className="stat-icon">💬</span>
-                      <span className="stat-value">{trip.comment_count}</span>
-                    </div>
-                  </div>
-
-                  <div className="trip-actions">
-                    <button
-                      onClick={() => handleLike(trip.id, trip.user_liked)}
-                      className={`like-btn ${trip.user_liked ? 'liked' : ''}`}
-                    >
-                      {trip.user_liked ? '❤️ Liked' : '🤍 Like'}
-                    </button>
-
-                    <Link to={`/trip/${trip.id}`} className="btn btn-primary btn-sm">
-                      View Details
-                    </Link>
-                  </div>
-                </div>
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!loading && trips.length === 0 && !error && (
-          <div className="empty-state">
-            <div className="empty-icon">🗺️</div>
-            <h3>No trips found</h3>
-            <p>
-              {searchQuery || destinationFilter
-                ? 'Try adjusting your search or filters'
-                : 'Be the first to share an amazing trip!'}
-            </p>
-            {isAuthenticated && user?.role === 'creator' && (
-              <Link to="/upload-trip" className="btn btn-primary">
-                📝 Upload Your First Trip
-              </Link>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
+                {trips.map(trip => (
+                  <div key={trip.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 flex flex-col h-full">
+                    <div className="relative pt-[66.67%] overflow-hidden bg-gray-100">
+                      <Link to={`/trip/${trip.id}`} className="absolute inset-0">
+                        <img 
+                          src={trip.cover_image_url || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80'} 
+                          alt={trip.title} 
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        />
+                      </Link>
+                      <button 
+                        className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all ${
+                          trip.user_liked 
+                            ? 'bg-red-500/90 text-white shadow-lg scale-110' 
+                            : 'bg-white/80 text-gray-600 hover:bg-white hover:scale-110'
+                        }`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleLike(trip.id, trip.user_liked);
+                        }}
+                      >
+                        <span className={`${trip.user_liked ? '' : 'grayscale'}`}>❤️</span> 
+                        <span className="ml-1 text-xs font-bold">{trip.like_count}</span>
+                      </button>
+                    </div>
+                    
+                    <div className="p-5 flex flex-col flex-grow">
+                      <div className="flex justify-between items-center mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+                          🕒 {trip.duration} days
+                        </span>
+                        <span className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-md border border-amber-100 text-amber-600">
+                          ⭐ {trip.average_rating ? trip.average_rating.toFixed(1) : 'New'}
+                        </span>
+                      </div>
+                      
+                      <Link to={`/trip/${trip.id}`} className="block mb-2">
+                        <h3 className="text-lg font-bold text-gray-900 leading-tight group-hover:text-teal-600 transition-colors line-clamp-2">
+                          {trip.title}
+                        </h3>
+                      </Link>
+                      
+                      <p className="text-sm font-medium text-gray-500 mb-4 flex items-center gap-1.5">
+                        <span>📍</span> {trip.destination}
+                      </p>
+                      
+                      <div className="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <img 
+                            src={trip.creator_avatar_url || 'https://ui-avatars.com/api/?name=' + trip.creator_name} 
+                            alt={trip.creator_name} 
+                            className="w-8 h-8 rounded-full border border-gray-200 object-cover"
+                          />
+                          <span className="text-sm font-medium text-gray-700 truncate max-w-[100px]">{trip.creator_name}</span>
+                        </div>
+                        <Link 
+                          to={`/trip/${trip.id}`} 
+                          className="text-sm font-bold text-teal-600 hover:text-teal-700 transition-colors"
+                        >
+                          View Details →
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
-          </div>
-        )}
 
-        {/* Load More Button */}
-        {!loading && trips.length > 0 && currentPage < totalPages && (
-          <div className="load-more-container">
-            <button onClick={loadMore} className="btn btn-secondary">
-              Load More Trips
-            </button>
-          </div>
+            {currentPage < totalPages && (
+              <div className="text-center pb-12">
+                <button 
+                  className="bg-white hover:bg-gray-50 text-gray-800 font-bold py-3 px-8 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all disabled:opacity-50"
+                  onClick={() => fetchTrips(currentPage + 1)}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+                      Loading...
+                    </span>
+                  ) : (
+                    'Load More Trips'
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

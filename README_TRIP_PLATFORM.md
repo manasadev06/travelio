@@ -26,6 +26,11 @@ A comprehensive trip-sharing platform where content creators can upload their tr
 - **User Profiles**: Creator information and statistics
 - **Interactive Tabs**: Organized content display
 
+### 🤖 AI Planner
+- **Visual Flowcharts**: Generate trip flowcharts using AI
+- **Mermaid.js Integration**: Visualizes trip plans
+- **External Service**: Connects to AI service (e.g., n8n) for generation
+
 ### 👍 Social Features
 - **Likes**: One like per user per trip
 - **Comments**: Threaded discussions with timestamps
@@ -38,27 +43,23 @@ A comprehensive trip-sharing platform where content creators can upload their tr
 - **Protected Routes**: Middleware for authenticated endpoints
 - **User Profiles**: Personal dashboard and statistics
 
-## 🗄 Database Design
+## 🗄 Database Design (MongoDB)
 
-### Core Tables
-```sql
-users - User authentication and profiles
-trips - Main trip content
-trip_days - Day-wise itinerary details
-likes - User likes on trips
-comments - User comments on trips
-reviews - User ratings and reviews
-```
-
-### Views & Statistics
-- **trip_stats**: Aggregated trip statistics
-- **user_stats**: Creator performance metrics
+### Core Collections
+- **users**: User authentication and profiles
+- **trips**: Main trip content with embedded:
+    - `trip_days`: Day-wise itinerary details
+    - `likes`: Array of user IDs
+    - `comments`: Array of comment objects
+    - `reviews`: Array of review objects
+- **posts**: Community posts
+- **aiplans**: AI generated trip plans history
 
 ## 🛠 Technology Stack
 
 ### Backend
 - **Node.js** with Express.js
-- **MySQL** database
+- **MongoDB** database (with Mongoose)
 - **JWT** authentication
 - **bcryptjs** password hashing
 - **CORS** enabled
@@ -66,6 +67,7 @@ reviews - User ratings and reviews
 ### Frontend
 - **React** with functional components
 - **React Router** for navigation
+- **Mermaid.js** for AI flowcharts
 - **CSS3** with modern styling
 - **Responsive Design** principles
 
@@ -73,33 +75,39 @@ reviews - User ratings and reviews
 
 ```
 backend/
-├── trip_schema.sql          # Database schema
-├── trip_backend.js          # Complete backend implementation
-└── .env.example            # Environment variables
+├── models/             # Mongoose schemas (Trip, User, etc.)
+├── routes/             # API routes (auth, trips, etc.)
+├── middleware/         # Auth middleware
+├── index.js            # Server entry point
+└── .env                # Environment variables
 
 frontend/src/
 ├── pages/
-│   ├── UploadTrip.js       # Trip upload form
-│   ├── ExploreTrips.js     # Browse and search trips
-│   ├── TripDetails.js      # Detailed trip view
-│   ├── UserProfile.js      # User profiles
-│   └── SearchResults.js    # Search results page
-└── components/
-    └── (Existing components)
+│   ├── UploadTrip.js   # Trip upload form
+│   ├── ExploreTrips.js # Browse and search trips
+│   ├── TripDetails.js  # Detailed trip view
+│   ├── AIFlowchart.js  # AI Planner
+│   └── ...
+├── components/         # Reusable UI components
+├── context/            # Auth context
+└── api/                # Axios setup
 ```
 
 ## 🚀 Getting Started
 
 ### Database Setup
-1. Create MySQL database: `travel_app`
-2. Import schema: `mysql -u root -p travel_app < backend/trip_schema.sql`
-3. Configure environment variables
+1. Ensure you have a MongoDB instance running (local or Atlas).
+2. Configure `MONGO_URI` in the backend `.env` file.
 
 ### Backend Setup
 ```bash
 cd backend
-npm install express mysql2 bcryptjs jsonwebtoken cors dotenv
-node trip_backend.js
+npm install
+# Create a .env file with:
+# MONGO_URI=mongodb://localhost:27017/travel_app
+# JWT_SECRET=your_secret_key
+# PORT=5000
+npm run dev
 ```
 
 ### Frontend Setup
@@ -128,54 +136,11 @@ npm start
 - `POST /api/trips/:id/reviews` - Add review
 
 ### Users
-- `GET /api/users/:id` - Get public user profile
 - `GET /api/user/profile` - Get own profile
-- `PUT /api/user/profile` - Update profile
+- `GET /api/users/:id` - Get public user profile
 
-### Search
-- `GET /api/search/trips?q=query` - Search trips
-
-## 🎨 UI Components
-
-### Trip Card
-- Cover image with fallback
-- Trip metadata (duration, destination, creator)
-- Engagement metrics (likes, comments, ratings)
-- Interactive like button
-
-### Upload Form
-- Multi-step form with validation
-- Dynamic day management
-- Image URL inputs
-- Real-time error handling
-
-### Trip Details
-- Tabbed content organization
-- Social interaction buttons
-- Review and comment sections
-- Creator information display
-
-## 🔒 Security Features
-
-- **Password Hashing**: bcryptjs for secure password storage
-- **JWT Tokens**: Secure authentication with expiration
-- **Input Validation**: Comprehensive server-side validation
-- **SQL Injection Prevention**: Parameterized queries
-- **CORS Protection**: Configured cross-origin requests
-
-## 📱 Responsive Design
-
-- **Mobile-First**: Optimized for mobile devices
-- **Tablet Support**: Adaptive layouts for tablets
-- **Desktop Experience**: Enhanced features for larger screens
-- **Touch-Friendly**: Interactive elements optimized for touch
-
-## 🚀 Performance Features
-
-- **Pagination**: Efficient data loading
-- **Image Optimization**: Lazy loading and placeholders
-- **Caching**: Database query optimization
-- **Minified Assets**: Optimized CSS and JavaScript
+### AI Planner
+- `POST /webhook/get-name` - (External) Generate AI plan
 
 ## 🧪 Testing
 
@@ -188,65 +153,11 @@ curl -X POST http://localhost:5000/api/trips \
   -d '{"title":"Test Trip","destination":"Test","duration":3,"description":"Test description"}'
 ```
 
-### Frontend Testing
-- Component interaction testing
-- Form validation testing
-- Authentication flow testing
-- Responsive design testing
-
-## 🔄 Sample Workflows
-
-### Creator Workflow
-1. Register as creator
-2. Login to account
-3. Upload trip with details
-4. Add day-wise itinerary
-5. Publish and share trip
-
-### User Workflow
-1. Browse available trips
-2. Search for specific destinations
-3. View trip details
-4. Like, comment, and review
-5. Follow favorite creators
-
-## 🎯 Key Features Implemented
-
-✅ **Complete Database Schema** with relationships and views
-✅ **Full Backend API** with authentication and validation
-✅ **React Frontend** with modern components
-✅ **Social Features** (likes, comments, reviews)
-✅ **Search & Filter** functionality
-✅ **User Profiles** and statistics
-✅ **Responsive Design** for all devices
-✅ **Error Handling** and validation
-✅ **Security** best practices
-
 ## 🚀 Deployment Notes
 
 ### Environment Variables
 ```env
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=travel_app
+MONGO_URI=mongodb+srv://...
 JWT_SECRET=your-secret-key
 PORT=5000
 ```
-
-### Production Considerations
-- Database connection pooling
-- Rate limiting for API endpoints
-- Image upload and storage
-- Email notifications
-- Analytics and monitoring
-
-## 📈 Scalability Features
-
-- **Database Indexing**: Optimized query performance
-- **Pagination**: Efficient data loading
-- **Caching Strategy**: Redis for frequently accessed data
-- **Load Balancing**: Ready for horizontal scaling
-- **CDN Integration**: Asset delivery optimization
-
-This platform provides a solid foundation for a trip-sharing community with room for future enhancements like real-time notifications, advanced search filters, and social networking features.
