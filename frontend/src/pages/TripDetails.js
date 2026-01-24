@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './TripDetails.css';
+import api from '../api/api';
 
 export default function TripDetails() {
   const { id } = useParams();
@@ -29,6 +29,7 @@ export default function TripDetails() {
 
   useEffect(() => {
     fetchTripDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchTripDetails = async () => {
@@ -36,16 +37,11 @@ export default function TripDetails() {
       setLoading(true);
       setError('');
 
-      const response = await fetch(`http://localhost:5000/api/trips/${id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setTrip(data);
-      } else {
-        setError(response.statusText || 'Trip not found');
-      }
+      const response = await api.get(`/trips/${id}`);
+      setTrip(response.data);
     } catch (error) {
       console.error('Fetch trip error:', error);
-      setError('Network error. Please try again.');
+      setError(error.response?.statusText || 'Trip not found');
     } finally {
       setLoading(false);
     }
@@ -58,22 +54,14 @@ export default function TripDetails() {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/trips/${id}/like`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setTrip(prev => ({
-          ...prev,
-          user_liked: data.liked,
-          like_count: data.liked ? prev.like_count + 1 : prev.like_count - 1
-        }));
-      }
+      const response = await api.post(`/trips/${id}/like`);
+      const data = response.data;
+      
+      setTrip(prev => ({
+        ...prev,
+        user_liked: data.liked,
+        like_count: data.liked ? prev.like_count + 1 : prev.like_count - 1
+      }));
     } catch (error) {
       console.error('Like error:', error);
     }
@@ -95,34 +83,21 @@ export default function TripDetails() {
     setSubmitting(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/trips/${id}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          comment: commentForm.comment.trim()
-        })
+      const response = await api.post(`/trips/${id}/comments`, {
+        comment: commentForm.comment.trim()
       });
+      const data = response.data;
 
-      if (response.ok) {
-        const data = await response.json();
-        setTrip(prev => ({
-          ...prev,
-          comments: [data.comment, ...prev.comments],
-          comment_count: prev.comment_count + 1
-        }));
-        setCommentForm({ comment: '' });
-        setShowCommentForm(false);
-      } else {
-        const errData = await response.json();
-        alert(errData.message || 'Failed to add comment');
-      }
+      setTrip(prev => ({
+        ...prev,
+        comments: [data.comment, ...prev.comments],
+        comment_count: prev.comment_count + 1
+      }));
+      setCommentForm({ comment: '' });
+      setShowCommentForm(false);
     } catch (error) {
       console.error('Comment error:', error);
-      alert('Failed to add comment');
+      alert(error.response?.data?.message || 'Failed to add comment');
     } finally {
       setSubmitting(false);
     }
@@ -139,36 +114,23 @@ export default function TripDetails() {
     setSubmitting(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/trips/${id}/reviews`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          rating: reviewForm.rating,
-          review: reviewForm.review.trim() || null
-        })
+      const response = await api.post(`/trips/${id}/reviews`, {
+        rating: reviewForm.rating,
+        review: reviewForm.review.trim() || null
       });
+      const data = response.data;
 
-      if (response.ok) {
-        const data = await response.json();
-        setTrip(prev => ({
-          ...prev,
-          reviews: [data.review, ...prev.reviews],
-          review_count: prev.review_count + 1,
-          average_rating: ((prev.average_rating * prev.review_count) + reviewForm.rating) / (prev.review_count + 1)
-        }));
-        setReviewForm({ rating: 5, review: '' });
-        setShowReviewForm(false);
-      } else {
-        const errData = await response.json();
-        alert(errData.message || 'Failed to add review');
-      }
+      setTrip(prev => ({
+        ...prev,
+        reviews: [data.review, ...prev.reviews],
+        review_count: prev.review_count + 1,
+        average_rating: ((prev.average_rating * prev.review_count) + reviewForm.rating) / (prev.review_count + 1)
+      }));
+      setReviewForm({ rating: 5, review: '' });
+      setShowReviewForm(false);
     } catch (error) {
       console.error('Review error:', error);
-      alert('Failed to add review');
+      alert(error.response?.data?.message || 'Failed to add review');
     } finally {
       setSubmitting(false);
     }
@@ -183,7 +145,11 @@ export default function TripDetails() {
       stars.push(
         <span
           key={i}
-          className={`star ${filled ? 'filled' : 'empty'} ${interactive ? 'interactive' : ''}`}
+          className={`text-2xl transition-all duration-200 ${
+            filled ? 'text-yellow-400' : 'text-gray-300'
+          } ${
+            interactive ? 'cursor-pointer hover:scale-110 hover:text-yellow-500' : 'cursor-default'
+          }`}
           onClick={interactive && onChange ? () => onChange(i) : null}
         >
           ⭐
@@ -204,466 +170,291 @@ export default function TripDetails() {
 
   if (loading) {
     return (
-      <div className="trip-details-page">
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading trip details...</p>
-        </div>
+      <div className="min-h-[60vh] flex items-center justify-center w-full">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-teal-600"></div>
       </div>
     );
   }
 
   if (error || !trip) {
     return (
-      <div className="trip-details-page">
-        <div className="error-state">
-          <div className="error-icon">❌</div>
-          <h3>Trip Not Found</h3>
-          <p>{error || 'The trip you are looking for does not exist.'}</p>
-          <Link to="/explore" className="btn btn-primary">
-            Browse Other Trips
-          </Link>
+      <div className="page-wrapper">
+        <div className="container">
+          <div className="text-center py-20">
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">Oops!</h2>
+            <p className="text-gray-600 mb-8">{error || 'Trip not found'}</p>
+            <Link to="/explore" className="btn btn-primary">Back to Explore</Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="trip-details-page">
-      {/* Header Section */}
-      <div className="trip-header">
-        <div className="container">
-          <div className="header-content">
-            <div className="trip-image">
-              {trip.cover_image_url ? (
-                <img src={trip.cover_image_url} alt={trip.title} />
-              ) : (
-                <div className="trip-image-placeholder">
-                  🌍 {trip.destination}
+    <div className="page-wrapper">
+      {/* Hero Section */}
+      <div className="relative h-[60vh] min-h-[400px] w-full overflow-hidden">
+        <img 
+          src={trip.cover_image_url || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=2000&q=80'} 
+          alt={trip.title} 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-end">
+          <div className="container pb-12 text-white">
+            <div className="max-w-4xl animate-fade-in">
+              <span className="inline-block px-3 py-1 bg-teal-600/90 rounded-full text-sm font-medium mb-4 backdrop-blur-sm">
+                📍 {trip.destination}
+              </span>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4 drop-shadow-md">{trip.title}</h1>
+              <div className="flex flex-wrap gap-6 text-lg items-center">
+                <span className="flex items-center gap-2">
+                  🕒 {trip.duration} Days
+                </span>
+                <span className="flex items-center gap-2">
+                  ⭐ {trip.average_rating ? trip.average_rating.toFixed(1) : 'New'} 
+                  <span className="text-sm opacity-80">({trip.review_count} reviews)</span>
+                </span>
+                <div className="flex items-center gap-2 ml-auto md:ml-0">
+                  <img 
+                    src={trip.creator_avatar_url || 'https://ui-avatars.com/api/?name=' + trip.creator_name} 
+                    alt={trip.creator_name} 
+                    className="w-8 h-8 rounded-full border-2 border-white" 
+                  />
+                  <span className="text-sm font-medium">By {trip.creator_name}</span>
                 </div>
-              )}
-            </div>
-
-            <div className="trip-info">
-              <div className="trip-breadcrumb">
-                <Link to="/explore">Explore</Link> / {trip.destination}
-              </div>
-
-              <h1 className="trip-title">{trip.title}</h1>
-              
-              <div className="trip-meta">
-                <div className="meta-item">
-                  <span className="meta-icon">📍</span>
-                  <span>{trip.destination}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-icon">📅</span>
-                  <span>{trip.duration} days</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-icon">👤</span>
-                  <Link to={`/user/${trip.creator_id}`} className="creator-link">
-                    {trip.creator_name}
-                  </Link>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-icon">📆</span>
-                  <span>{formatDate(trip.created_at)}</span>
-                </div>
-              </div>
-
-              <div className="trip-stats">
-                <div className="stat-item">
-                  <div className="stat-value">
-                    {trip.average_rating > 0 ? trip.average_rating.toFixed(1) : 'New'}
-                  </div>
-                  <div className="stat-label">Rating</div>
-                  <div className="stat-stars">
-                    {renderStars(trip.average_rating)}
-                  </div>
-                  {trip.review_count > 0 && (
-                    <div className="stat-count">({trip.review_count} reviews)</div>
-                  )}
-                </div>
-
-                <div className="stat-item">
-                  <div className="stat-value">{trip.like_count}</div>
-                  <div className="stat-label">Likes</div>
-                </div>
-
-                <div className="stat-item">
-                  <div className="stat-value">{trip.comment_count}</div>
-                  <div className="stat-label">Comments</div>
-                </div>
-              </div>
-
-              <div className="trip-actions">
-                <button
-                  onClick={handleLike}
-                  className={`like-btn ${trip.user_liked ? 'liked' : ''}`}
-                >
-                  {trip.user_liked ? '❤️ Liked' : '🤍 Like'}
-                </button>
-
-                {isAuthenticated && (
-                  <>
-                    <button
-                      onClick={() => setShowCommentForm(!showCommentForm)}
-                      className="btn btn-secondary"
-                    >
-                      💬 Comment
-                    </button>
-
-                    <button
-                      onClick={() => setShowReviewForm(!showReviewForm)}
-                      className="btn btn-primary"
-                    >
-                      ⭐ Review
-                    </button>
-                  </>
-                )}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Content Section */}
-      <div className="trip-content">
-        <div className="container">
-          <div className="content-layout">
-            {/* Main Content */}
-            <div className="main-content">
+      <div className="container -mt-8 relative z-10 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Main Content */}
+          <div className="lg:col-span-2">
+            <div className="card bg-white shadow-xl overflow-hidden animate-fade-in">
               {/* Tabs */}
-              <div className="content-tabs">
-                <button
-                  className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('overview')}
-                >
-                  Overview
-                </button>
-                <button
-                  className={`tab ${activeTab === 'itinerary' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('itinerary')}
-                >
-                  Itinerary ({trip.day_count})
-                </button>
-                <button
-                  className={`tab ${activeTab === 'reviews' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('reviews')}
-                >
-                  Reviews ({trip.review_count})
-                </button>
-                <button
-                  className={`tab ${activeTab === 'comments' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('comments')}
-                >
-                  Comments ({trip.comment_count})
-                </button>
+              <div className="flex border-b border-gray-200 overflow-x-auto">
+                {['overview', 'itinerary', 'reviews'].map((tab) => (
+                  <button 
+                    key={tab}
+                    className={`px-6 py-4 font-semibold text-sm uppercase tracking-wider transition-colors whitespace-nowrap
+                      ${activeTab === tab 
+                        ? 'text-teal-700 border-b-2 border-teal-700 bg-teal-50/50' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      }`}
+                    onClick={() => setActiveTab(tab)}
+                  >
+                    {tab === 'reviews' ? `Reviews (${trip.review_count})` : tab}
+                  </button>
+                ))}
               </div>
 
               {/* Tab Content */}
-              <div className="tab-content">
-                {/* Overview Tab */}
+              <div className="p-6 md:p-8">
                 {activeTab === 'overview' && (
-                  <div className="overview-content">
-                    <h2>Trip Description</h2>
-                    <div className="description">
-                      {trip.description.split('\n').map((paragraph, index) => (
-                        <p key={index}>{paragraph}</p>
+                  <div className="animate-fade-in space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-bold mb-4 text-gray-800">About this Trip</h2>
+                      <p className="text-gray-600 leading-relaxed whitespace-pre-line">{trip.description}</p>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-4 pt-6 border-t border-gray-100">
+                      <button 
+                        className={`btn ${trip.user_liked ? 'bg-red-50 text-red-600 border border-red-200' : 'btn-outline'} gap-2`}
+                        onClick={handleLike}
+                      >
+                        {trip.user_liked ? '❤️ Liked' : '🤍 Like Trip'} 
+                        <span className="bg-white/50 px-2 py-0.5 rounded-full text-xs font-bold ml-1">
+                          {trip.like_count}
+                        </span>
+                      </button>
+                      <button 
+                        className="btn btn-secondary gap-2"
+                        onClick={() => {
+                          setActiveTab('reviews');
+                          setTimeout(() => {
+                            document.getElementById('comments-section')?.scrollIntoView({ behavior: 'smooth' });
+                          }, 100);
+                        }}
+                      >
+                        💬 Comments <span className="text-xs opacity-70">({trip.comment_count})</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'itinerary' && (
+                  <div className="animate-fade-in">
+                    <h2 className="text-2xl font-bold mb-8 text-gray-800">Day by Day Itinerary</h2>
+                    <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
+                      {trip.trip_days.map((day, index) => (
+                        <div key={index} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-300 group-[.is-active]:bg-teal-600 text-slate-500 group-[.is-active]:text-emerald-50 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                            {day.day_number}
+                          </div>
+                          <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 className="font-bold text-lg text-gray-800 mb-2">Day {day.day_number}: {day.title}</h3>
+                            <p className="text-gray-600 mb-4 text-sm leading-relaxed">{day.content}</p>
+                            {day.image_urls && day.image_urls.length > 0 && (
+                              <div className="grid grid-cols-2 gap-2 mt-4">
+                                {day.image_urls.map((url, imgIndex) => (
+                                  <img 
+                                    key={imgIndex} 
+                                    src={url} 
+                                    alt={`Day ${day.day_number} - ${imgIndex + 1}`} 
+                                    className="rounded-lg h-24 w-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       ))}
                     </div>
-
-                    {trip.creator_avatar_url && (
-                      <div className="creator-section">
-                        <h3>About the Creator</h3>
-                        <div className="creator-card">
-                          <div className="creator-avatar">
-                            <img src={trip.creator_avatar_url} alt={trip.creator_name} />
-                          </div>
-                          <div className="creator-info">
-                            <h4>{trip.creator_name}</h4>
-                            <p>Content Creator</p>
-                            <Link to={`/user/${trip.creator_id}`} className="btn btn-secondary btn-sm">
-                              View Profile
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
 
-                {/* Itinerary Tab */}
-                {activeTab === 'itinerary' && (
-                  <div className="itinerary-content">
-                    <h2>Day-wise Itinerary</h2>
-                    {trip.trip_days && trip.trip_days.length > 0 ? (
-                      <div className="itinerary-days">
-                        {trip.trip_days.map((day) => (
-                          <div key={day.id} className="day-card">
-                            <div className="day-header">
-                              <h3>Day {day.day_number}: {day.title}</h3>
-                            </div>
-                            <div className="day-content">
-                              <p>{day.content}</p>
-                              {day.image_urls && day.image_urls.length > 0 && (
-                                <div className="day-images">
-                                  {day.image_urls.map((url, index) => (
-                                    <img
-                                      key={index}
-                                      src={url}
-                                      alt={`Day ${day.day_number} - Image ${index + 1}`}
-                                      className="day-image"
-                                    />
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p>No detailed itinerary available.</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Reviews Tab */}
                 {activeTab === 'reviews' && (
-                  <div className="reviews-content">
-                    <div className="section-header">
-                      <h2>Reviews</h2>
-                      {isAuthenticated && (
-                        <button
-                          onClick={() => setShowReviewForm(!showReviewForm)}
-                          className="btn btn-primary"
-                        >
-                          Write Review
-                        </button>
+                  <div className="animate-fade-in space-y-10">
+                    {/* Reviews */}
+                    <div>
+                      <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold text-gray-800">Reviews</h2>
+                        {!showReviewForm && (
+                          <button className="btn btn-primary btn-small" onClick={() => setShowReviewForm(true)}>
+                            Write a Review
+                          </button>
+                        )}
+                      </div>
+
+                      {showReviewForm && (
+                        <form onSubmit={handleReviewSubmit} className="bg-gray-50 p-6 rounded-xl border border-gray-200 mb-8 animate-fade-in">
+                          <div className="mb-4">
+                            <label className="block font-medium mb-2">Your Rating</label>
+                            <div className="flex gap-2 text-2xl">
+                              {renderStars(reviewForm.rating, true, (rating) => setReviewForm(prev => ({ ...prev, rating })))}
+                            </div>
+                          </div>
+                          <div className="mb-4">
+                            <label className="block font-medium mb-2">Your Experience</label>
+                            <textarea
+                              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                              rows="4"
+                              placeholder="Share your experience..."
+                              value={reviewForm.review}
+                              onChange={(e) => setReviewForm(prev => ({ ...prev, review: e.target.value }))}
+                              required
+                            ></textarea>
+                          </div>
+                          <div className="flex gap-3 justify-end">
+                            <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowReviewForm(false)}>Cancel</button>
+                            <button type="submit" className="btn btn-primary btn-small" disabled={submitting}>
+                              {submitting ? 'Submitting...' : 'Submit Review'}
+                            </button>
+                          </div>
+                        </form>
                       )}
+
+                      <div className="space-y-6">
+                        {trip.reviews.length === 0 ? (
+                          <p className="text-gray-500 italic text-center py-8">No reviews yet. Be the first to review!</p>
+                        ) : (
+                          trip.reviews.map((review, index) => (
+                            <div key={index} className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                  <img src={review.avatar_url || 'https://ui-avatars.com/api/?name=' + review.user_name} alt={review.user_name} className="w-10 h-10 rounded-full bg-gray-200" />
+                                  <div>
+                                    <span className="block font-semibold text-gray-900">{review.user_name}</span>
+                                    <span className="text-xs text-gray-500">{formatDate(review.created_at)}</span>
+                                  </div>
+                                </div>
+                                <div className="flex text-yellow-400 text-sm">{renderStars(review.rating)}</div>
+                              </div>
+                              <p className="text-gray-700 text-sm leading-relaxed">{review.review}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
 
-                    {showReviewForm && (
-                      <form onSubmit={handleReviewSubmit} className="review-form">
-                        <div className="form-group">
-                          <label>Rating</label>
-                          <div className="rating-input">
-                            {renderStars(reviewForm.rating, true, (rating) =>
-                              setReviewForm(prev => ({ ...prev, rating }))
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="form-group">
-                          <label>Review (Optional)</label>
-                          <textarea
-                            value={reviewForm.review}
-                            onChange={(e) => setReviewForm(prev => ({ ...prev, review: e.target.value }))}
-                            placeholder="Share your experience with this trip..."
-                            rows="4"
-                            maxLength="1000"
-                          />
-                        </div>
-
-                        <div className="form-actions">
-                          <button
-                            type="submit"
-                            className="btn btn-primary"
-                            disabled={submitting}
-                          >
-                            {submitting ? 'Submitting...' : 'Submit Review'}
+                    {/* Comments */}
+                    <div id="comments-section" className="pt-8 border-t border-gray-200">
+                      <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-bold text-gray-800">Comments & Questions</h2>
+                        {!showCommentForm && (
+                          <button className="btn btn-outline btn-small" onClick={() => setShowCommentForm(true)}>
+                            Add Comment
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => setShowReviewForm(false)}
-                            className="btn btn-secondary"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </form>
-                    )}
-
-                    {trip.reviews && trip.reviews.length > 0 ? (
-                      <div className="reviews-list">
-                        {trip.reviews.map((review) => (
-                          <div key={review.id} className="review-card">
-                            <div className="review-header">
-                              <div className="reviewer-info">
-                                {review.avatar_url && (
-                                  <img src={review.avatar_url} alt={review.user_name} className="reviewer-avatar" />
-                                )}
-                                <div>
-                                  <div className="reviewer-name">{review.user_name}</div>
-                                  <div className="review-date">{formatDate(review.created_at)}</div>
-                                </div>
-                              </div>
-                              <div className="review-rating">
-                                {renderStars(review.rating)}
-                              </div>
-                            </div>
-                            {review.review && (
-                              <div className="review-content">
-                                <p>{review.review}</p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                        )}
                       </div>
-                    ) : (
-                      <p>No reviews yet. Be the first to review this trip!</p>
-                    )}
-                  </div>
-                )}
 
-                {/* Comments Tab */}
-                {activeTab === 'comments' && (
-                  <div className="comments-content">
-                    <div className="section-header">
-                      <h2>Comments</h2>
-                      {isAuthenticated && (
-                        <button
-                          onClick={() => setShowCommentForm(!showCommentForm)}
-                          className="btn btn-primary"
-                        >
-                          Add Comment
-                        </button>
+                      {showCommentForm && (
+                        <form onSubmit={handleCommentSubmit} className="bg-gray-50 p-6 rounded-xl border border-gray-200 mb-8 animate-fade-in">
+                          <div className="mb-4">
+                            <textarea
+                              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                              rows="3"
+                              placeholder="Ask a question or share a thought..."
+                              value={commentForm.comment}
+                              onChange={(e) => setCommentForm({ comment: e.target.value })}
+                              required
+                            ></textarea>
+                          </div>
+                          <div className="flex gap-3 justify-end">
+                            <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowCommentForm(false)}>Cancel</button>
+                            <button type="submit" className="btn btn-primary btn-small" disabled={submitting}>
+                              {submitting ? 'Posting...' : 'Post Comment'}
+                            </button>
+                          </div>
+                        </form>
                       )}
-                    </div>
 
-                    {showCommentForm && (
-                      <form onSubmit={handleCommentSubmit} className="comment-form">
-                        <div className="form-group">
-                          <textarea
-                            value={commentForm.comment}
-                            onChange={(e) => setCommentForm(prev => ({ ...prev, comment: e.target.value }))}
-                            placeholder="Share your thoughts about this trip..."
-                            rows="3"
-                            maxLength="500"
-                            required
-                          />
-                        </div>
-
-                        <div className="form-actions">
-                          <button
-                            type="submit"
-                            className="btn btn-primary"
-                            disabled={submitting}
-                          >
-                            {submitting ? 'Posting...' : 'Post Comment'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setShowCommentForm(false)}
-                            className="btn btn-secondary"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </form>
-                    )}
-
-                    {trip.comments && trip.comments.length > 0 ? (
-                      <div className="comments-list">
-                        {trip.comments.map((comment) => (
-                          <div key={comment.id} className="comment-card">
-                            <div className="comment-header">
-                              <div className="commenter-info">
-                                {comment.avatar_url && (
-                                  <img src={comment.avatar_url} alt={comment.user_name} className="commenter-avatar" />
-                                )}
-                                <div>
-                                  <div className="commenter-name">{comment.user_name}</div>
-                                  <div className="comment-date">{formatDate(comment.created_at)}</div>
+                      <div className="space-y-4">
+                        {trip.comments.length === 0 ? (
+                          <p className="text-gray-500 italic text-center py-4">No comments yet.</p>
+                        ) : (
+                          trip.comments.map((comment, index) => (
+                            <div key={index} className="flex gap-4 p-4 bg-white rounded-lg border border-gray-100 shadow-sm">
+                              <img src={comment.avatar_url || 'https://ui-avatars.com/api/?name=' + comment.user_name} alt={comment.user_name} className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0" />
+                              <div className="flex-1">
+                                <div className="flex justify-between items-baseline mb-1">
+                                  <span className="font-semibold text-sm text-gray-900">{comment.user_name}</span>
+                                  <span className="text-xs text-gray-500">{formatDate(comment.created_at)}</span>
                                 </div>
+                                <p className="text-gray-700 text-sm">{comment.comment}</p>
                               </div>
                             </div>
-                            <div className="comment-content">
-                              <p>{comment.comment}</p>
-                            </div>
-                          </div>
-                        ))}
+                          ))
+                        )}
                       </div>
-                    ) : (
-                      <p>No comments yet. Start the conversation!</p>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>
             </div>
+          </div>
 
-            {/* Sidebar */}
-            <div className="sidebar">
-              {/* Quick Actions */}
-              <div className="sidebar-section">
-                <h3>Quick Actions</h3>
-                <div className="quick-actions">
-                  <button
-                    onClick={handleLike}
-                    className={`like-btn ${trip.user_liked ? 'liked' : ''}`}
-                  >
-                    {trip.user_liked ? '❤️ Liked' : '🤍 Like'}
-                  </button>
-
-                  {isAuthenticated && (
-                    <>
-                      <button
-                        onClick={() => setShowCommentForm(true)}
-                        className="btn btn-secondary"
-                      >
-                        💬 Comment
-                      </button>
-
-                      <button
-                        onClick={() => setShowReviewForm(true)}
-                        className="btn btn-primary"
-                      >
-                        ⭐ Review
-                      </button>
-                    </>
-                  )}
-                </div>
+          {/* Sidebar */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="card p-6 bg-white shadow-lg animate-fade-in" style={{animationDelay: '0.1s'}}>
+              <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">About the Creator</h3>
+              <div className="flex flex-col items-center text-center">
+                <img src={trip.creator_avatar_url || 'https://ui-avatars.com/api/?name=' + trip.creator_name} alt={trip.creator_name} className="w-20 h-20 rounded-full mb-3 ring-4 ring-teal-50" />
+                <h4 className="font-bold text-lg mb-1">{trip.creator_name}</h4>
+                <p className="text-sm text-gray-500 mb-4">Travel Enthusiast</p>
+                <Link to={`/user/${trip.creator_id}`} className="btn btn-outline w-full justify-center">View Profile</Link>
               </div>
+            </div>
 
-              {/* Trip Stats */}
-              <div className="sidebar-section">
-                <h3>Trip Stats</h3>
-                <div className="stats-list">
-                  <div className="stat-row">
-                    <span>Duration</span>
-                    <span>{trip.duration} days</span>
-                  </div>
-                  <div className="stat-row">
-                    <span>Likes</span>
-                    <span>{trip.like_count}</span>
-                  </div>
-                  <div className="stat-row">
-                    <span>Comments</span>
-                    <span>{trip.comment_count}</span>
-                  </div>
-                  <div className="stat-row">
-                    <span>Reviews</span>
-                    <span>{trip.review_count}</span>
-                  </div>
-                  <div className="stat-row">
-                    <span>Average Rating</span>
-                    <span>
-                      {trip.average_rating > 0 ? trip.average_rating.toFixed(1) : 'New'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Share */}
-              <div className="sidebar-section">
-                <h3>Share Trip</h3>
-                <div className="share-buttons">
-                  <button className="share-btn">📋 Copy Link</button>
-                  <button className="share-btn">📧 Email</button>
-                  <button className="share-btn">💬 WhatsApp</button>
-                </div>
-              </div>
+            <div className="card p-6 bg-gradient-to-br from-teal-700 to-teal-900 text-white shadow-lg animate-fade-in" style={{animationDelay: '0.2s'}}>
+              <h3 className="font-bold text-xl mb-2">Inspired?</h3>
+              <p className="opacity-90 mb-6 text-sm">Use our AI planner to customize this itinerary or create a similar adventure tailored just for you.</p>
+              <Link to="/ai-planner" className="btn bg-white text-teal-800 hover:bg-teal-50 w-full justify-center font-bold border-none">
+                ✨ Start AI Planner
+              </Link>
             </div>
           </div>
         </div>
