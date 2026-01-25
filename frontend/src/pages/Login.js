@@ -43,7 +43,7 @@ export default function Login() {
       // ✅ REAL JWT TOKEN FROM BACKEND
       login(data.token);
 
-      navigate("/dashboard");
+      navigate("/");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     } finally {

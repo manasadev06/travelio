@@ -1,12 +1,14 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,10 +18,21 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsUserDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   function handleLogout() {
     logout();
     navigate("/");
     setIsMobileMenuOpen(false);
+    setIsUserDropdownOpen(false);
   }
 
   function toggleMobileMenu() {
@@ -79,21 +92,37 @@ export default function Navbar() {
           </>
         ) : (
           <>
-            <li className="ml-4 mr-2 font-semibold text-gray-700">👋 Hi, {user.name}</li>
             <li>
               <NavLink to="/dashboard" className={({ isActive }) => `px-4 py-2 rounded-full font-medium transition-all ${isActive ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50 hover:text-teal-600'}`}>
                 📊 Dashboard
               </NavLink>
             </li>
-            <li>
-              <NavLink to="/profile" className={({ isActive }) => `px-4 py-2 rounded-full font-medium transition-all ${isActive ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50 hover:text-teal-600'}`}>
-                👤 Profile
-              </NavLink>
-            </li>
-            <li className="ml-2">
-              <button onClick={handleLogout} className="px-4 py-2 border border-gray-200 text-gray-600 rounded-full hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all font-medium text-sm">
-                Logout
+            <li className="ml-2 relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                className="px-4 py-2 rounded-full font-medium text-gray-600 hover:bg-gray-50 hover:text-teal-600 flex items-center gap-2 transition-all"
+              >
+                👤 {user.name}
+                <span className={`text-sm transition-transform ${isUserDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
               </button>
+
+              {isUserDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50">
+                  <NavLink
+                    to="/profile"
+                    onClick={() => setIsUserDropdownOpen(false)}
+                    className={({ isActive }) => `block px-4 py-3 rounded-t-xl transition-all ${isActive ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}
+                  >
+                    👤 My Profile
+                  </NavLink>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-3 rounded-b-xl text-red-600 hover:bg-red-50 transition-all font-medium text-sm border-t border-gray-100"
+                  >
+                    🚪 Logout
+                  </button>
+                </div>
+              )}
             </li>
           </>
         )}
@@ -126,7 +155,6 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-gray-100">
-            <div className="px-3 py-2 font-bold text-gray-800">👋 Hi, {user.name}</div>
             <NavLink to="/dashboard" onClick={handleLinkClick} className="p-3 rounded-xl text-gray-600 hover:bg-gray-50 flex items-center gap-3">
               📊 Dashboard
             </NavLink>
