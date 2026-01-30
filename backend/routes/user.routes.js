@@ -1,6 +1,6 @@
 const express = require("express");
 const User = require("../models/user.model");
-const Trip = require("../models/Trip.model");
+const Trip = require("../models/Trip");
 const auth = require("../middleware/auth");
 
 const router = express.Router();

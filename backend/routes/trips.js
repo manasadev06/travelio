@@ -1,389 +1,207 @@
 const express = require("express");
-const Trip = require("../models/Trip.model");
-const User = require("../models/user.model");
+const Trip = require("../models/Trip"); // Using the new model
 const auth = require("../middleware/auth");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 const router = express.Router();
 
+// Configure Multer Storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = "uploads/";
+    // Ensure directory exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath);
+    }
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename: fieldname-timestamp.ext
+    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
+  },
+});
+
+const upload = multer({ storage: storage });
+
 /**
  * POST /api/trips
- * Upload a trip with day-wise itinerary
+ * Create a new trip
  */
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, upload.single("cover_image"), async (req, res) => {
   try {
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ message: "Cover image is required" });
+    }
+
     const {
       title,
       destination,
+      trip_type,
       duration,
+      short_summary,
       description,
-      cover_image_url,
-      trip_days,
+      itinerary,
+      total_budget,
+      accommodation_cost,
+      travel_cost,
+      food_misc_cost,
+      accommodation_type,
+      accommodation_name,
+      weather,
+      best_time_to_visit,
+      tags, // Expected to be JSON string
+      is_public,
     } = req.body;
 
-    // ---- BASIC VALIDATION ----
-    if (
-      !title ||
-      !destination ||
-      !duration ||
-      !description ||
-      !Array.isArray(trip_days) ||
-      trip_days.length === 0
-    ) {
-      return res.status(400).json({ message: "Invalid request data" });
+    // Parse tags if it's a string (JSON stringified array)
+    let parsedTags = [];
+    try {
+      if (typeof tags === "string") {
+        parsedTags = JSON.parse(tags);
+      } else if (Array.isArray(tags)) {
+        parsedTags = tags;
+      }
+    } catch (err) {
+      return res.status(400).json({ message: "Invalid tags format" });
     }
 
-    // Get creator info
-    const creator = await User.findById(req.user.id);
-    if (!creator) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Create trip with embedded trip_days
-    const trip = new Trip({
+    // Create new Trip
+    const newTrip = new Trip({
       title,
       destination,
-      duration,
+      trip_type,
+      duration: Number(duration),
+      short_summary,
       description,
-      cover_image_url: cover_image_url || null,
-      creator_id: req.user.id,
-      creator_name: creator.name,
-      creator_avatar_url: creator.avatar_url || null,
-      trip_days: trip_days.map(day => ({
-        day_number: day.day_number,
-        title: day.title,
-        content: day.content,
-        image_urls: day.image_urls || []
-      })),
-      likes: [],
-      comments: [],
-      reviews: [],
-      like_count: 0,
-      comment_count: 0,
-      review_count: 0,
-      average_rating: 0
+      itinerary,
+      total_budget: Number(total_budget),
+      accommodation_cost: Number(accommodation_cost),
+      travel_cost: Number(travel_cost),
+      food_misc_cost: Number(food_misc_cost),
+      accommodation_type,
+      accommodation_name,
+      weather,
+      best_time_to_visit,
+      tags: parsedTags,
+      is_public: is_public === "true" || is_public === true,
+      cover_image: req.file.path, // Save file path
+      user: req.user.id,
     });
 
-    await trip.save();
+    console.log("Saving new trip:", newTrip); // Log trip before saving
 
-    res.status(201).json({
-      message: "Trip uploaded successfully",
-      trip_id: trip._id.toString(),
-    });
-  } catch (err) {
-    console.error("UPLOAD TRIP ERROR:", err);
-    res.status(500).json({ message: "Failed to upload trip" });
+    const savedTrip = await newTrip.save();
+    res.status(201).json(savedTrip);
+  } catch (error) {
+    console.error("Error creating trip:", error); // Log full error
+    if (error.name === "ValidationError") {
+        return res.status(400).json({ message: error.message, errors: error.errors });
+    }
+    // Remove uploaded file if save fails
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error("Failed to delete file after error:", err);
+      });
+    }
+    res.status(500).json({ message: "Server error while saving trip", error: error.message });
   }
 });
 
 /**
  * GET /api/trips
- * Get all trips with pagination, sorting, and filtering
+ * Get all public trips with pagination and sorting
  */
 router.get("/", async (req, res) => {
   try {
-    const { page = 1, limit = 12, destination, sort = "created_at" } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const userId = req.user ? req.user.id : null;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const sort = req.query.sort || "created_at";
+    const destination = req.query.destination;
 
-    // Build query
-    const query = {};
+    const query = { is_public: true };
     if (destination) {
       query.destination = { $regex: destination, $options: "i" };
     }
 
-    // Build sort object
-    const validSorts = ["created_at", "average_rating", "like_count", "comment_count"];
-    const sortField = validSorts.includes(sort) ? sort : "created_at";
-    const sortObj = { [sortField]: -1 };
+    let sortOptions = {};
+    if (sort === "created_at") sortOptions = { createdAt: -1 };
+    else if (sort === "like_count") sortOptions = { createdAt: -1 }; // Placeholder
+    else if (sort === "average_rating") sortOptions = { createdAt: -1 }; // Placeholder
 
-    // Get trips
+    const skip = (page - 1) * limit;
+
     const trips = await Trip.find(query)
-      .sort(sortObj)
+      .populate("user", "name avatar_url")
+      .sort(sortOptions)
       .skip(skip)
-      .limit(parseInt(limit))
-      .lean();
+      .limit(limit);
 
-    // Add user_liked field
-    const tripsWithLiked = trips.map(trip => {
-      const tripObj = { ...trip };
-      tripObj.id = trip._id.toString();
-      const userIdStr = userId ? (typeof userId === 'string' ? userId : userId.toString()) : null;
-      tripObj.user_liked = userIdStr ? trip.likes.some(likeId => likeId.toString() === userIdStr) : false;
-      tripObj.day_count = trip.trip_days ? trip.trip_days.length : 0;
-      return tripObj;
-    });
+    const totalItems = await Trip.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limit);
 
-    // Get total count
-    const total = await Trip.countDocuments(query);
+    const transformedTrips = trips.map((trip) => ({
+      id: trip._id,
+      title: trip.title,
+      destination: trip.destination,
+      cover_image_url: trip.cover_image.startsWith("http")
+        ? trip.cover_image
+        : `http://localhost:5000/${trip.cover_image.replace(/\\/g, "/")}`,
+      user_liked: false,
+      like_count: 0,
+      duration: trip.duration,
+      average_rating: 0,
+      creator_name: trip.user?.name || "Unknown",
+      creator_avatar_url: trip.user?.avatar_url || "",
+      createdAt: trip.createdAt,
+    }));
 
-    res.status(200).json({
-      trips: tripsWithLiked,
+    res.json({
+      trips: transformedTrips,
       pagination: {
-        current_page: parseInt(page),
-        total_pages: Math.ceil(total / parseInt(limit)),
-        total_items: total,
-        items_per_page: parseInt(limit)
-      }
+        total_pages: totalPages,
+        total_items: totalItems,
+        current_page: page,
+      },
     });
   } catch (error) {
-    console.error("Get trips error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error fetching trips:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
 /**
  * GET /api/trips/:id
- * Get trip details
+ * Get trip details by ID
  */
 router.get("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.user ? req.user.id : null;
+    const trip = await Trip.findById(req.params.id).populate("user", "name avatar_url");
+    if (!trip) return res.status(404).json({ message: "Trip not found" });
 
-    const trip = await Trip.findById(id).lean();
-
-    if (!trip) {
-      return res.status(404).json({ message: "Trip not found" });
-    }
-
-    // Format response
-    const userIdStr = userId ? (typeof userId === 'string' ? userId : userId.toString()) : null;
-    const tripObj = {
-      ...trip,
-      id: trip._id.toString(),
-      user_liked: userIdStr ? trip.likes.some(likeId => likeId.toString() === userIdStr) : false,
-      day_count: trip.trip_days ? trip.trip_days.length : 0
+    const transformedTrip = {
+      id: trip._id,
+      ...trip._doc,
+      cover_image_url: trip.cover_image.startsWith("http")
+        ? trip.cover_image
+        : `http://localhost:5000/${trip.cover_image.replace(/\\/g, "/")}`,
+      creator_name: trip.user?.name || "Unknown",
+      creator_avatar_url: trip.user?.avatar_url || "",
+      user_liked: false,
+      like_count: 0,
+      average_rating: 0,
+      comment_count: 0,
     };
 
-    // Format comments and reviews (they're already embedded)
-    tripObj.comments = trip.comments || [];
-    tripObj.reviews = trip.reviews || [];
-    tripObj.trip_days = trip.trip_days || [];
-
-    res.status(200).json(tripObj);
+    res.json(transformedTrip);
   } catch (error) {
-    console.error("Get trip details error:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-/**
- * PUT /api/trips/:id
- * Update trip (creator only)
- */
-router.put("/:id", auth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { title, destination, duration, description, cover_image_url } = req.body;
-    const creatorId = req.user.id;
-
-    const trip = await Trip.findById(id);
-
-    if (!trip) {
+    console.error("Error fetching trip details:", error);
+    if (error.kind === "ObjectId") {
       return res.status(404).json({ message: "Trip not found" });
     }
-
-    const creatorIdStr = typeof creatorId === 'string' ? creatorId : creatorId.toString();
-    if (trip.creator_id.toString() !== creatorIdStr) {
-      return res.status(403).json({ message: "You can only edit your own trips" });
-    }
-
-    // Update fields
-    if (title) trip.title = title;
-    if (destination) trip.destination = destination;
-    if (duration) trip.duration = duration;
-    if (description) trip.description = description;
-    if (cover_image_url !== undefined) trip.cover_image_url = cover_image_url;
-
-    await trip.save();
-
-    res.status(200).json({ message: "Trip updated successfully" });
-  } catch (error) {
-    console.error("Update trip error:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-/**
- * DELETE /api/trips/:id
- * Delete trip (creator only)
- */
-router.delete("/:id", auth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const creatorId = req.user.id;
-
-    const trip = await Trip.findById(id);
-
-    if (!trip) {
-      return res.status(404).json({ message: "Trip not found" });
-    }
-
-    const creatorIdStr = typeof creatorId === 'string' ? creatorId : creatorId.toString();
-    if (trip.creator_id.toString() !== creatorIdStr) {
-      return res.status(403).json({ message: "You can only delete your own trips" });
-    }
-
-    await Trip.findByIdAndDelete(id);
-
-    res.status(200).json({ message: "Trip deleted successfully" });
-  } catch (error) {
-    console.error("Delete trip error:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-/**
- * POST /api/trips/:id/like
- * Like/unlike trip
- */
-router.post("/:id/like", auth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.id;
-
-    const trip = await Trip.findById(id);
-
-    if (!trip) {
-      return res.status(404).json({ message: "Trip not found" });
-    }
-
-    const userIdObj = typeof userId === 'string' ? userId : userId.toString();
-    const likesArray = trip.likes.map(likeId => likeId.toString());
-    const isLiked = likesArray.includes(userIdObj);
-
-    if (isLiked) {
-      // Unlike - remove user from likes array
-      trip.likes = trip.likes.filter(likeId => likeId.toString() !== userIdObj);
-      trip.like_count = Math.max(0, trip.like_count - 1);
-      await trip.save();
-      res.status(200).json({ message: "Trip unliked", liked: false });
-    } else {
-      // Like - add user to likes array (Mongoose will convert string to ObjectId)
-      trip.likes.push(userId);
-      trip.like_count = trip.like_count + 1;
-      await trip.save();
-      res.status(200).json({ message: "Trip liked", liked: true });
-    }
-  } catch (error) {
-    console.error("Like trip error:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-/**
- * POST /api/trips/:id/comments
- * Add comment to trip
- */
-router.post("/:id/comments", auth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { comment } = req.body;
-    const userId = req.user.id;
-
-    if (!comment || comment.trim().length < 1) {
-      return res.status(400).json({ message: "Comment cannot be empty" });
-    }
-
-    if (comment.trim().length > 500) {
-      return res.status(400).json({ message: "Comment must be less than 500 characters" });
-    }
-
-    const trip = await Trip.findById(id);
-
-    if (!trip) {
-      return res.status(404).json({ message: "Trip not found" });
-    }
-
-    // Get user info
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Add comment to embedded array
-    const newComment = {
-      user_id: userId,
-      user_name: user.name,
-      avatar_url: user.avatar_url || null,
-      comment: comment.trim(),
-      created_at: new Date()
-    };
-
-    trip.comments.push(newComment);
-    trip.comment_count = trip.comment_count + 1;
-    await trip.save();
-
-    res.status(201).json({
-      message: "Comment added successfully",
-      comment: newComment
-    });
-  } catch (error) {
-    console.error("Add comment error:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-/**
- * POST /api/trips/:id/reviews
- * Add review to trip
- */
-router.post("/:id/reviews", auth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { rating, review } = req.body;
-    const userId = req.user.id;
-
-    // Validate rating
-    if (!rating || rating < 1 || rating > 5) {
-      return res.status(400).json({ message: "Rating must be between 1 and 5" });
-    }
-
-    const trip = await Trip.findById(id);
-
-    if (!trip) {
-      return res.status(404).json({ message: "Trip not found" });
-    }
-
-    // Check if user already reviewed
-    const userIdStr = typeof userId === 'string' ? userId : userId.toString();
-    const existingReview = trip.reviews.find(r => r.user_id.toString() === userIdStr);
-    if (existingReview) {
-      return res.status(400).json({ message: "You have already reviewed this trip" });
-    }
-
-    // Get user info
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Add review to embedded array
-    const newReview = {
-      user_id: userId,
-      user_name: user.name,
-      avatar_url: user.avatar_url || null,
-      rating: parseInt(rating),
-      review: review ? review.trim() : null,
-      created_at: new Date()
-    };
-
-    trip.reviews.push(newReview);
-    trip.review_count = trip.review_count + 1;
-
-    // Calculate average rating
-    const totalRating = trip.reviews.reduce((sum, r) => sum + r.rating, 0);
-    trip.average_rating = totalRating / trip.review_count;
-
-    await trip.save();
-
-    res.status(201).json({
-      message: "Review added successfully",
-      review: newReview
-    });
-  } catch (error) {
-    console.error("Add review error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
