@@ -138,7 +138,7 @@ export default function UploadTrip() {
       setLoading(false);
       
       // Navigate after delay
-      setTimeout(() => navigate("/explore"), 2000);
+      setTimeout(() => navigate("/explore"), 1000);
     } catch (err) {
       console.error("Upload error:", err);
       if (err.response && err.response.data) {
