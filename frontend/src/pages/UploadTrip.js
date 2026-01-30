@@ -1,23 +1,49 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import api from "../api/api";
+import api from "../api/api"; // Uncommented for API usage
 
 export default function UploadTrip() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
+    // 1. Trip Basics
     title: "",
     destination: "",
+    trip_type: "Solo",
     duration: "",
+    
+    // 2. Trip Description
+    short_summary: "",
     description: "",
-    cover_image_url: "",
+    
+    // 3. Itinerary
+    itinerary: "",
+    
+    // 4. Budget Details
+    total_budget: "",
+    accommodation_cost: "",
+    travel_cost: "",
+    food_misc_cost: "",
+    
+    // 5. Accommodation
+    accommodation_type: "Hotel",
+    accommodation_name: "",
+    
+    // 6. Weather & Best Time
+    weather: "Sunny",
+    best_time_to_visit: "",
+    
+    // 7. Media
+    cover_image: null,
+    
+    // 8. Tags
+    tags: "",
+    
+    // 9. Visibility
+    is_public: "true", // "true" or "false" string for radio
   });
-
-  const [tripDays, setTripDays] = useState([
-    { day_number: 1, title: "", content: "", image_urls: [] },
-  ]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -30,100 +56,39 @@ export default function UploadTrip() {
     }
   }, [isAuthenticated, navigate]);
 
-  /* ---------------- BASIC FORM ---------------- */
+  /* ---------------- HANDLERS ---------------- */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  /* ---------------- DAY HANDLERS ---------------- */
-  const handleDayChange = (index, field, value) => {
-    setTripDays((prev) =>
-      prev.map((day, i) =>
-        i === index ? { ...day, [field]: value } : day
-      )
-    );
-  };
-
-  const addTripDay = () => {
-    setTripDays((prev) => [
-      ...prev,
-      {
-        day_number: prev.length + 1,
-        title: "",
-        content: "",
-        image_urls: [],
-      },
-    ]);
-  };
-
-  const removeTripDay = (index) => {
-    if (tripDays.length === 1) return;
-
-    const updated = tripDays
-      .filter((_, i) => i !== index)
-      .map((day, i) => ({ ...day, day_number: i + 1 }));
-
-    setTripDays(updated);
-  };
-
-  /* ---------------- IMAGE HANDLERS ---------------- */
-  const addImageUrl = (dayIndex) => {
-    setTripDays((prev) =>
-      prev.map((day, i) =>
-        i === dayIndex
-          ? { ...day, image_urls: [...day.image_urls, ""] }
-          : day
-      )
-    );
-  };
-
-  const handleImageUrlChange = (dayIndex, imageIndex, value) => {
-    setTripDays((prev) =>
-      prev.map((day, i) =>
-        i === dayIndex
-          ? {
-            ...day,
-            image_urls: day.image_urls.map((url, j) =>
-              j === imageIndex ? value : url
-            ),
-          }
-          : day
-      )
-    );
-  };
-
-  const removeImageUrl = (dayIndex, imageIndex) => {
-    setTripDays((prev) =>
-      prev.map((day, i) =>
-        i === dayIndex
-          ? {
-            ...day,
-            image_urls: day.image_urls.filter(
-              (_, j) => j !== imageIndex
-            ),
-          }
-          : day
-      )
-    );
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFormData((prev) => ({ ...prev, cover_image: e.target.files[0] }));
+    }
   };
 
   /* ---------------- VALIDATION ---------------- */
   const validateForm = () => {
     const errors = [];
-
-    if (!formData.title.trim()) errors.push("Title required");
-    if (!formData.destination.trim()) errors.push("Destination required");
-    if (!formData.duration || formData.duration < 1)
-      errors.push("Duration must be valid");
-    if (formData.description.trim().length < 10)
-      errors.push("Description too short");
-
-    tripDays.forEach((day, i) => {
-      if (!day.title.trim() || !day.content.trim()) {
-        errors.push(`Day ${i + 1} incomplete`);
-      }
-    });
+    if (!formData.title.trim()) errors.push("Title is required");
+    if (!formData.destination.trim()) errors.push("Destination is required");
+    if (!formData.duration || formData.duration < 1) errors.push("Valid duration is required");
+    if (!formData.short_summary.trim()) errors.push("Short summary is required");
+    if (!formData.description.trim()) errors.push("Detailed description is required");
+    if (!formData.itinerary.trim()) errors.push("Itinerary is required");
+    
+    if (!formData.total_budget || formData.total_budget < 0) errors.push("Total budget is required");
+    if (!formData.accommodation_cost || formData.accommodation_cost < 0) errors.push("Accommodation cost is required");
+    if (!formData.travel_cost || formData.travel_cost < 0) errors.push("Travel cost is required");
+    if (!formData.food_misc_cost || formData.food_misc_cost < 0) errors.push("Food & Misc cost is required");
+    
+    if (!formData.accommodation_type) errors.push("Accommodation type is required");
+    if (!formData.weather) errors.push("Weather is required");
+    if (!formData.best_time_to_visit.trim()) errors.push("Best time to visit is required");
+    
+    if (!formData.cover_image) errors.push("Cover image is required");
+    if (!formData.tags.trim()) errors.push("Tags are required");
 
     return errors;
   };
@@ -137,34 +102,51 @@ export default function UploadTrip() {
     const validationErrors = validateForm();
     if (validationErrors.length) {
       setError(validationErrors.join(", "));
-      return;
-    }
-
-    if (!isAuthenticated) {
-      navigate("/login");
+      window.scrollTo(0, 0);
       return;
     }
 
     setLoading(true);
 
     try {
-      const payload = {
-        ...formData,
-        duration: Number(formData.duration),
-        trip_days: tripDays.map((day) => ({
-          ...day,
-          image_urls: day.image_urls.filter((u) => u.trim()),
-        })),
-      };
+      const data = new FormData();
+      
+      // Append text fields
+      Object.keys(formData).forEach((key) => {
+        if (key === "tags") {
+          // Parse tags string to array then stringify for backend
+          const tagsArray = formData.tags.split(",").map(tag => tag.trim()).filter(Boolean);
+          data.append("tags", JSON.stringify(tagsArray));
+        } else if (key !== "cover_image") {
+          data.append(key, formData[key]);
+        }
+      });
 
-      await api.post("/trips", payload);
+      // Append file
+      if (formData.cover_image) {
+        data.append("cover_image", formData.cover_image);
+      }
 
-      setSuccess("Trip uploaded successfully");
-      setTimeout(() => navigate("/profile"), 1500);
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || "Upload failed");
-    } finally {
+      // API Call
+      await api.post("/trips", data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setSuccess("Trip uploaded successfully!");
       setLoading(false);
+      
+      // Navigate after delay
+      setTimeout(() => navigate("/explore"), 2000);
+    } catch (err) {
+      console.error("Upload error:", err);
+      if (err.response && err.response.data) {
+        console.error("Server Error Details:", err.response.data);
+      }
+      setError(err.response?.data?.message || "Failed to upload trip");
+    } finally {setLoading(false);
+      window.scrollTo(0, 0);
     }
   };
 
@@ -200,12 +182,12 @@ export default function UploadTrip() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Section: Trip Overview */}
+          
+          {/* 1. Trip Basics */}
           <div className="bg-white shadow-lg rounded-2xl p-6 md:p-8 animate-fade-in">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center gap-2">
-              <span className="text-teal-600">📝</span> Trip Overview
+              <span className="text-teal-600">📝</span> Trip Basics
             </h2>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">Trip Title</label>
@@ -217,7 +199,6 @@ export default function UploadTrip() {
                   onChange={handleInputChange}
                 />
               </div>
-
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">Destination</label>
                 <input
@@ -228,7 +209,20 @@ export default function UploadTrip() {
                   onChange={handleInputChange}
                 />
               </div>
-
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">Trip Type</label>
+                <select
+                  name="trip_type"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all bg-white"
+                  value={formData.trip_type}
+                  onChange={handleInputChange}
+                >
+                  <option value="Solo">Solo</option>
+                  <option value="Couple">Couple</option>
+                  <option value="Friends">Friends</option>
+                  <option value="Family">Family</option>
+                </select>
+              </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">Duration (Days)</label>
                 <input
@@ -241,24 +235,31 @@ export default function UploadTrip() {
                   onChange={handleInputChange}
                 />
               </div>
+            </div>
+          </div>
 
+          {/* 2. Trip Description */}
+          <div className="bg-white shadow-lg rounded-2xl p-6 md:p-8 animate-fade-in">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center gap-2">
+              <span className="text-teal-600">📄</span> Trip Description
+            </h2>
+            <div className="space-y-6">
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Cover Image URL</label>
+                <label className="block text-sm font-semibold text-gray-700">Short Summary</label>
                 <input
-                  name="cover_image_url"
+                  name="short_summary"
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                  placeholder="https://example.com/image.jpg"
-                  value={formData.cover_image_url}
+                  placeholder="Brief overview (1-2 lines)"
+                  value={formData.short_summary}
                   onChange={handleInputChange}
                 />
               </div>
-
-              <div className="md:col-span-2 space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Trip Description</label>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">Detailed Description</label>
                 <textarea
                   name="description"
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all h-32"
-                  placeholder="Tell us about the highlights of your trip..."
+                  placeholder="Tell us all about your trip..."
                   value={formData.description}
                   onChange={handleInputChange}
                 />
@@ -266,104 +267,205 @@ export default function UploadTrip() {
             </div>
           </div>
 
-          {/* Section: Itinerary */}
-          <div className="bg-white shadow-lg rounded-2xl p-6 md:p-8 animate-fade-in" style={{animationDelay: '0.1s'}}>
-            <div className="flex justify-between items-center mb-6 border-b pb-4">
-              <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                <span className="text-teal-600">📅</span> Detailed Itinerary
-              </h2>
-              <button 
-                type="button" 
-                className="btn btn-secondary btn-small flex items-center gap-2 hover:bg-gray-100" 
-                onClick={addTripDay}
-              >
-                <span>➕</span> Add Day
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {tripDays.map((day, i) => (
-                <div key={i} className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold text-teal-800">Day {day.day_number}</h3>
-                    {tripDays.length > 1 && (
-                      <button
-                        type="button"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-full transition-colors"
-                        onClick={() => removeTripDay(i)}
-                        title="Remove Day"
-                      >
-                        🗑️
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">Day Title</label>
-                      <input
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white"
-                        placeholder="e.g. Arrival and Beach Relaxation"
-                        value={day.title}
-                        onChange={(e) => handleDayChange(i, "title", e.target.value)}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">Day Activities</label>
-                      <textarea
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white h-24"
-                        placeholder="Describe the activities for this day..."
-                        value={day.content}
-                        onChange={(e) => handleDayChange(i, "content", e.target.value)}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">Photos</label>
-                      <div className="space-y-2">
-                        {day.image_urls.map((url, j) => (
-                          <div key={j} className="flex gap-2">
-                            <input
-                              className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white text-sm"
-                              placeholder="Image URL"
-                              value={url}
-                              onChange={(e) => handleImageUrlChange(i, j, e.target.value)}
-                            />
-                            <button
-                              type="button"
-                              className="text-gray-400 hover:text-red-500 px-2"
-                              onClick={() => removeImageUrl(i, j)}
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <button 
-                        type="button" 
-                        className="text-teal-600 text-sm font-medium hover:text-teal-800 hover:underline flex items-center gap-1 mt-2" 
-                        onClick={() => addImageUrl(i)}
-                      >
-                        ➕ Add Photo URL
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 pt-6 border-t border-gray-100">
-              <button 
-                type="button" 
-                className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-semibold hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50 transition-all flex justify-center items-center gap-2" 
-                onClick={addTripDay}
-              >
-                <span>➕</span> Add Another Day
-              </button>
+          {/* 3. Itinerary */}
+          <div className="bg-white shadow-lg rounded-2xl p-6 md:p-8 animate-fade-in">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center gap-2">
+              <span className="text-teal-600">📅</span> Itinerary
+            </h2>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">Day-wise Itinerary</label>
+              <textarea
+                name="itinerary"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all h-48"
+                placeholder="Day 1: Arrival...&#10;Day 2: City Tour..."
+                value={formData.itinerary}
+                onChange={handleInputChange}
+              />
             </div>
           </div>
 
+          {/* 4. Budget Details */}
+          <div className="bg-white shadow-lg rounded-2xl p-6 md:p-8 animate-fade-in">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center gap-2">
+              <span className="text-teal-600">💰</span> Budget Details
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">Total Budget</label>
+                <input
+                  type="number"
+                  name="total_budget"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  placeholder="0.00"
+                  min="0"
+                  value={formData.total_budget}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">Accommodation Cost</label>
+                <input
+                  type="number"
+                  name="accommodation_cost"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  placeholder="0.00"
+                  min="0"
+                  value={formData.accommodation_cost}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">Travel Cost</label>
+                <input
+                  type="number"
+                  name="travel_cost"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  placeholder="0.00"
+                  min="0"
+                  value={formData.travel_cost}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">Food & Misc Cost</label>
+                <input
+                  type="number"
+                  name="food_misc_cost"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  placeholder="0.00"
+                  min="0"
+                  value={formData.food_misc_cost}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Accommodation */}
+          <div className="bg-white shadow-lg rounded-2xl p-6 md:p-8 animate-fade-in">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center gap-2">
+              <span className="text-teal-600">🏨</span> Accommodation
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">Accommodation Type</label>
+                <select
+                  name="accommodation_type"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all bg-white"
+                  value={formData.accommodation_type}
+                  onChange={handleInputChange}
+                >
+                  <option value="Hotel">Hotel</option>
+                  <option value="Hostel">Hostel</option>
+                  <option value="Airbnb">Airbnb</option>
+                  <option value="Friend/Relative">Friend/Relative</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">Accommodation Name (Optional)</label>
+                <input
+                  name="accommodation_name"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  placeholder="e.g. Grand Hotel"
+                  value={formData.accommodation_name}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 6. Weather & Best Time */}
+          <div className="bg-white shadow-lg rounded-2xl p-6 md:p-8 animate-fade-in">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center gap-2">
+              <span className="text-teal-600">🌤️</span> Weather & Best Time
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">Weather During Trip</label>
+                <select
+                  name="weather"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all bg-white"
+                  value={formData.weather}
+                  onChange={handleInputChange}
+                >
+                  <option value="Sunny">Sunny</option>
+                  <option value="Rainy">Rainy</option>
+                  <option value="Cold">Cold</option>
+                  <option value="Mixed">Mixed</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">Best Time to Visit</label>
+                <input
+                  name="best_time_to_visit"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  placeholder="e.g. May to September"
+                  value={formData.best_time_to_visit}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 7. Media & Tags & Visibility */}
+          <div className="bg-white shadow-lg rounded-2xl p-6 md:p-8 animate-fade-in">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center gap-2">
+              <span className="text-teal-600">📷</span> Media & Details
+            </h2>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">Cover Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all bg-white"
+                />
+                <p className="text-xs text-gray-500">Upload a cover image for your trip.</p>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">Tags</label>
+                <input
+                  name="tags"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  placeholder="e.g. Budget, Adventure, Beach (comma separated)"
+                  value={formData.tags}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">Visibility</label>
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="is_public"
+                      value="true"
+                      checked={formData.is_public === "true"}
+                      onChange={handleInputChange}
+                      className="w-5 h-5 text-teal-600 focus:ring-teal-500 border-gray-300"
+                    />
+                    <span className="text-gray-700">Public</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="is_public"
+                      value="false"
+                      checked={formData.is_public === "false"}
+                      onChange={handleInputChange}
+                      className="w-5 h-5 text-teal-600 focus:ring-teal-500 border-gray-300"
+                    />
+                    <span className="text-gray-700">Private</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Submit Button */}
           <div className="flex justify-end pt-4">
             <button 
               type="submit" 

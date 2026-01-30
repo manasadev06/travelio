@@ -66,11 +66,13 @@ export default function Navbar() {
             🏠 Home
           </NavLink>
         </li>
-        <li>
-          <NavLink to="/explore" className={({ isActive }) => `px-4 py-2 rounded-full font-medium transition-all ${isActive ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50 hover:text-teal-600'}`}>
-            🗺️ Explore
-          </NavLink>
-        </li>
+        {user && (
+          <li>
+            <NavLink to="/upload-trip" className={({ isActive }) => `px-4 py-2 rounded-full font-medium transition-all ${isActive ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50 hover:text-teal-600'}`}>
+              � Upload Trip
+            </NavLink>
+          </li>
+        )}
         <li>
           <NavLink to="/ai-planner" className={({ isActive }) => `px-4 py-2 rounded-full font-medium transition-all ${isActive ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50 hover:text-teal-600'}`}>
             🤖 AI Planner
@@ -136,9 +138,11 @@ export default function Navbar() {
           🏠 Home
         </NavLink>
         
-        <NavLink to="/explore" onClick={handleLinkClick} className={({ isActive }) => `p-3 rounded-xl flex items-center gap-3 ${isActive ? 'bg-teal-50 text-teal-700 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}>
-          🗺️ Explore
-        </NavLink>
+        {user && (
+          <NavLink to="/upload-trip" onClick={handleLinkClick} className={({ isActive }) => `p-3 rounded-xl flex items-center gap-3 ${isActive ? 'bg-teal-50 text-teal-700 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}>
+            � Upload Trip
+          </NavLink>
+        )}
         
         <NavLink to="/ai-planner" onClick={handleLinkClick} className={({ isActive }) => `p-3 rounded-xl flex items-center gap-3 ${isActive ? 'bg-teal-50 text-teal-700 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}>
           🤖 AI Planner
