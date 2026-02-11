@@ -1,44 +1,10 @@
 import { Link } from "react-router-dom";
+import { destinations } from "../data/destinations";
+
 
 export default function Home() {
-  const featuredDestinations = [
-    {
-      id: 1,
-      name: "Bali, Indonesia",
-      location: "Indonesia",
-      description: "Tropical paradise with stunning beaches and vibrant culture",
-      image: "https://images.unsplash.com/photo-1537953773345-d172ccf13cf1?w=400&h=300&fit=crop",
-      rating: 4.8,
-      reviews: 1247
-    },
-    {
-      id: 2,
-      name: "Paris, France",
-      location: "France",
-      description: "City of lights with world-class art and cuisine",
-      image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400&h=300&fit=crop",
-      rating: 4.9,
-      reviews: 2156
-    },
-    {
-      id: 3,
-      name: "Tokyo, Japan",
-      location: "Japan",
-      description: "Modern metropolis blending tradition and innovation",
-      image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&h=300&fit=crop",
-      rating: 4.7,
-      reviews: 1823
-    },
-    {
-      id: 4,
-      name: "Santorini, Greece",
-      location: "Greece",
-      description: "Iconic white-washed buildings and breathtaking sunsets",
-      image: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=400&h=300&fit=crop",
-      rating: 4.9,
-      reviews: 987
-    }
-  ];
+  
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -112,20 +78,20 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Trending Destinations</h2>
               <p className="text-lg text-gray-600">Handpicked locations for your next unforgettable journey</p>
             </div>
-            <Link to="/explore" className="px-6 py-2 border-2 border-teal-600 text-teal-600 font-bold rounded-full hover:bg-teal-50 transition-colors">
+            <Link to="/destinations" className="px-6 py-2 border-2 border-teal-600 text-teal-600 font-bold rounded-full hover:bg-teal-50 transition-colors">
               View All
             </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {featuredDestinations.map((destination) => (
+            {destinations.filter((destination) => destination.trending).map((destination) => (
               <div key={destination.id} className="group bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-xl transition-all hover:-translate-y-1">
                 <div className="relative h-48 overflow-hidden">
                   <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-sm font-bold shadow-sm z-10 flex items-center gap-1">
                     ⭐ {destination.rating}
                   </div>
                   <img 
-                    src={destination.image} 
+                    src={destination.cardImage} 
                     alt={destination.name} 
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
                   />
@@ -136,10 +102,10 @@ export default function Home() {
                     <h3 className="text-lg font-bold text-gray-900 group-hover:text-teal-700 transition-colors">{destination.name}</h3>
                   </div>
                   <p className="text-teal-600 text-sm font-medium mb-3 flex items-center gap-1">
-                    📍 {destination.location}
+                    📍 {destination.country}
                   </p>
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">{destination.description}</p>
-                  <Link to={`/explore`} className="block w-full py-2 bg-gray-50 hover:bg-teal-600 hover:text-white text-gray-700 text-center rounded-lg font-medium transition-colors text-sm">
+                  <Link to={`/destination/${destination.slug}`} className="block w-full py-2 bg-gray-50 hover:bg-teal-600 hover:text-white text-gray-700 text-center rounded-lg font-medium transition-colors text-sm">
                     Explore Guide
                   </Link>
                 </div>
