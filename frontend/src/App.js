@@ -13,8 +13,10 @@ import SearchResults from "./pages/SearchResults";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/protectedRoute";
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import Footer from "./components/Footer"
+import Explore from "./pages/Explore";
 import AIFlowchart from "./pages/AIFlowchart";
+
 
 
 export default function App() {
@@ -30,12 +32,12 @@ export default function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/upload-trip" element={<UploadTrip />} />
               <Route path="/explore" element={<ExploreTrips />} />
+              <Route path="/destinations" element={<Explore />} />
               <Route path="/trip/:id" element={<TripDetails />} />
               <Route path="/user/:id" element={<UserProfile />} />
               <Route path="/search" element={<SearchResults />} />
-              <Route path="/destination/:id" element={<DestinationDetails />} />
+              <Route path="/destination/:slug" element={<DestinationDetails />} />
               <Route path="/ai-planner" element={<AIFlowchart />} />
-
               <Route
                 path="/dashboard"
                 element={
