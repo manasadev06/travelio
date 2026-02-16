@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import mermaid from "mermaid";
+import DayCarousel from "../components/DayCarousel";
 
 // Initialize Mermaid once
 mermaid.initialize({
@@ -59,7 +60,12 @@ const MermaidDiagram = ({ chart }) => {
 export default function AIFlowchart() {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
-  const [plan, setPlan] = useState({ text: "", chart: "" });
+  const [plan, setPlan] = useState({
+  text: "",
+  chart: "",
+  days: []
+});
+
   const [error, setError] = useState("");
 
   const generateFlowchart = async () => {
@@ -67,10 +73,10 @@ export default function AIFlowchart() {
 
     setLoading(true);
     setError("");
-    setPlan({ text: "", chart: "" });
+    setPlan({ text: "", chart: "", days: [] });
 
     try {
-      const res = await fetch("http://localhost:5678/webhook/get-name", {
+      const res = await fetch("http://localhost:5678/webhook/get-names", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
@@ -79,9 +85,18 @@ export default function AIFlowchart() {
       const data = await res.json();
 
       setPlan({
-        text: (data.textPlan || "").trim(),
-        chart: (data.mermaidCode || "").trim(),
-      });
+  text: (data.textPlan || "").trim(),
+  chart: (data.mermaidCode || "").trim(),
+  days: Array.isArray(data.itinerary)
+    ? data.itinerary
+    : typeof data.itinerary === "string"
+      ? JSON.parse(data.itinerary)
+      : []
+});
+
+    console.log("ITINERARY:", data.itinerary);
+    console.log("TYPE:", typeof data.itinerary);
+
     } catch {
       setError("Could not connect to AI service. Is n8n running?");
     } finally {
@@ -90,83 +105,90 @@ export default function AIFlowchart() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 page-wrapper">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12 animate-fade-in">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-2">🤖 AI Trip Flowchart</h1>
-          <p className="text-lg text-gray-600">
-            Describe a trip idea and get a visual flowchart to understand it better.
-          </p>
+  <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 page-wrapper">
+    <div className="max-w-4xl mx-auto">
+
+      {/* Header */}
+      <div className="text-center mb-12 animate-fade-in">
+        <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
+          🤖 AI Trip Flowchart
+        </h1>
+        <p className="text-lg text-gray-600">
+          Describe a trip idea and get a visual flowchart to understand it better.
+        </p>
+      </div>
+
+      {/* Input Section */}
+      <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 animate-fade-in">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <input
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && generateFlowchart()}
+            placeholder="e.g. 3 day trip to Manali"
+            className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all outline-none"
+          />
+
+          <button
+            onClick={generateFlowchart}
+            disabled={loading}
+            className={`px-8 py-3 rounded-xl font-bold text-white transition-all transform hover:-translate-y-0.5
+              ${loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-teal-600 hover:bg-teal-700 shadow-md hover:shadow-lg"
+              }`}
+          >
+            {loading ? "Generating..." : "Generate Plan"}
+          </button>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 animate-fade-in">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <input
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && generateFlowchart()}
-              placeholder="e.g. 3 day trip to Manali"
-              className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all outline-none"
-            />
-
-            <button
-              onClick={generateFlowchart}
-              disabled={loading}
-              className={`px-8 py-3 rounded-xl font-bold text-white transition-all transform hover:-translate-y-0.5
-                ${loading 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-teal-600 hover:bg-teal-700 shadow-md hover:shadow-lg'
-                }`}
-            >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Generating...
-                </span>
-              ) : (
-                "Generate Plan"
-              )}
-            </button>
-          </div>
-
-          {error && (
-            <div className="mt-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md animate-fade-in">
-              <div className="flex">
-                <div className="flex-shrink-0 text-red-500">⚠️</div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {plan.text && (
-          <div className="mt-8 animate-fade-in">
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-              <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <span>📋</span> AI Explanation
-              </h3>
-              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {plan.text}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {plan.chart && (
-          <div className="mt-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-              <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <span>🗺️</span> Flowchart
-              </h3>
-              <div className="p-4 border border-gray-200 rounded-xl bg-white overflow-x-auto">
-                <MermaidDiagram chart={plan.chart} />
-              </div>
-            </div>
+        {error && (
+          <div className="mt-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+            <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
       </div>
+
+      {/* TEXT PLAN */}
+      {plan.text && (
+        <div className="mt-8 animate-fade-in">
+          <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">
+              📋 AI Explanation
+            </h3>
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 whitespace-pre-wrap">
+              {plan.text}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FLOWCHART */}
+      {plan.chart && (
+        <div className="mt-8 animate-fade-in">
+          <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">
+              🗺️ Flowchart
+            </h3>
+            <div className="p-4 border border-gray-200 rounded-xl bg-white overflow-x-auto">
+              <MermaidDiagram chart={plan.chart} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DAY CAROUSEL */}
+      {plan.days.length > 0 && (
+        <div className="mt-12 animate-fade-in">
+          <h3 className="text-2xl font-bold text-gray-800 mb-6">
+            📅 Trip Breakdown
+          </h3>
+          <DayCarousel days={plan.days} />
+        </div>
+      )}
+
     </div>
-  );
+  </div>
+);
+
 }
