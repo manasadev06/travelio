@@ -298,7 +298,7 @@ export default function Home() {
               </h2>
 
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                Share your experiences, upload photos, write travel stories,
+                Share your experiences online, upload photos, write travel stories,
                 and inspire thousands of explorers around the world.
               </p>
 
