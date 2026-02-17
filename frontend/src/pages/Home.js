@@ -1,11 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link,useNavigate } from "react-router-dom";
 import { destinations } from "../data/destinations";
-import { useEffect, useState } from "react";
+import { useEffect, useState} from "react";
+import { useAuth } from "../context/AuthContext";
 
 
-export default function Home() {
-  
-    const heroImages = [
+ const heroImages = [
     "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=2021&q=80",
     // 🏝 Tropical Beach
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2021&q=80",
@@ -32,7 +31,31 @@ export default function Home() {
   "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=2021&q=80"
     ];
 
+
+export default function Home() {
+  
+   
   const [currentImage, setCurrentImage] = useState(0);
+  const { user } = useAuth();
+const navigate = useNavigate();
+
+const handleStartSharing = () => {
+  if (user) {
+    navigate("/upload-trip");
+  } else {
+    navigate("/login");
+  }
+};
+
+const handleGenerateTrip = () => {
+  if (user) {
+    navigate("/ai-planner");
+  } else {
+    navigate("/login");
+  }
+};
+
+
 
   useEffect(() => {
   const interval = setInterval(() => {
@@ -163,12 +186,12 @@ export default function Home() {
                 </div>
               </div>
 
-              <Link
-                to="/ai-planner"
-                className="inline-block px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-full transition-all hover:scale-105 shadow-lg"
-              >
-                🤖 Generate My Trip
-              </Link>
+              <button onClick={handleGenerateTrip}
+  className="inline-block px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-full transition-all hover:scale-105 shadow-lg"
+>
+  🤖 Generate My Trip
+</button>
+
             </div>
 
             {/* Right Mock AI Card */}
@@ -309,12 +332,13 @@ export default function Home() {
                 <li>🏆 Build your travel profile</li>
               </ul>
 
-              <Link
-                to="/register"
-                className="inline-block px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-full transition-all hover:scale-105 shadow-lg"
-              >
-                🚀 Start Sharing
-              </Link>
+              <button
+  onClick={handleStartSharing}
+  className="inline-block px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-full transition-all hover:scale-105 shadow-lg"
+>
+  🚀 Start Sharing
+</button>
+
             </div>
 
           </div>
