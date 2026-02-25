@@ -10,6 +10,69 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 
+import { useEffect } from "react";
+import { Handle, Position } from "reactflow";
+
+/* Editable Ellipse Node */
+function EditableNode({ id, data }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(data.label);
+
+  const handleBlur = () => {
+    setEditing(false);
+
+    data.setNodes((nds) =>
+      nds.map((node) =>
+        node.id === id
+          ? { ...node, data: { ...node.data, label: value } }
+          : node
+      )
+    );
+  };
+
+  return (
+    <div
+      onDoubleClick={() => setEditing(true)}
+      style={{
+        padding: 12,
+        borderRadius: 50,
+        border: "2px solid #0d9488",
+        background: "#f0fdfa",
+        fontWeight: 600,
+        textAlign: "center",
+        minWidth: 120
+      }}
+    >
+      <Handle type="target" position={Position.Top} />
+
+      {editing ? (
+        <input
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={(e) => e.key === "Enter" && handleBlur()}
+          style={{
+            border: "none",
+            outline: "none",
+            background: "transparent",
+            textAlign: "center",
+            width: "100%"
+          }}
+        />
+      ) : (
+        value
+      )}
+
+      <Handle type="source" position={Position.Bottom} />
+    </div>
+  );
+}
+
+const nodeTypes = {
+  editable: EditableNode
+};
+
 export default function AIFlowchart() {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
@@ -61,15 +124,13 @@ export default function AIFlowchart() {
 
         const nodes = graph.nodes.map((node, index) => ({
           id: node.id,
-          data: { label: node.label },
-          position: { x: 250, y: index * 120 },
-          style: {
-            padding: 12,
-            borderRadius: 50,
-            border: "2px solid #0d9488",
-            background: "#f0fdfa",
-            fontWeight: 600
-          }
+          type: "editable",
+          data: {
+            label: node.label,
+            setNodes
+          },
+          position: { x: 250, y: index * 120 }
+
         }));
 
         const edges = graph.edges.map((edge, index) => ({
@@ -166,15 +227,34 @@ export default function AIFlowchart() {
         {/* FLOWCHART */}
         {plan.graph?.nodes?.length > 0 && (
           <div className="mt-8">
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 w-full overflow-hidden">
               <h3 className="text-2xl font-bold text-gray-800 mb-4">
                 🗺️ Flowchart
               </h3>
 
-              <div style={{ height: 500 }}>
+              <div style={{ height: 500, padding: 20 }}>
+                <button
+                    onClick={() => {
+                      const newNode = {
+                        id: Date.now().toString(),
+                        type: "editable",
+                        position: { x: 250, y: nodes.length * 120 },
+                        data: {
+                          label: "New Step",
+                          setNodes
+                        }
+                      };
+
+                      setNodes((nds) => [...nds, newNode]);
+                    }}
+                    className="mb-4 px-4 py-2 bg-teal-600 text-white rounded-lg"
+                  >
+                    ➕ Add Step
+                  </button>
                 <ReactFlow
                   nodes={nodes}
                   edges={edges}
+                  nodeTypes={nodeTypes}
                   onNodesChange={onNodesChange}
                   onEdgesChange={onEdgesChange}
                   onConnect={(params) => setEdges((eds) => addEdge(params, eds))}
