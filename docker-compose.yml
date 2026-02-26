@@ -1,46 +1,40 @@
 services:
-  mongo:
-    image: mongo
-    container_name: travelio-mongo
-    restart: always
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
     container_name: travelio-backend
-    restart: always
     ports:
-      - "5001:5000"
-    depends_on:
-      - mongo
-    environment:
-      - MONGO_URI=mongodb+srv://manasa123:Manasa215@cluster0.cj2ckzg.mongodb.net/?appName=Cluster0
-      - JWT_SECRET=your_secret_key
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
     container_name: travelio-frontend
     ports:
-      - "3000:80"
+      - "3000:3000"
     depends_on:
       - backend
+    restart: unless-stopped
 
   n8n:
-    image: n8nio/n8n
+    image: n8nio/n8n:latest
     container_name: travelio-n8n
-    restart: always
     ports:
       - "5678:5678"
     environment:
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=admin123
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - WEBHOOK_URL=http://localhost:5678
+      - GENERIC_TIMEZONE=Asia/Kolkata
     volumes:
-      - n8n-data:/home/node/.n8n
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - backend
+    restart: unless-stopped
 
 volumes:
-  mongo-data:
-  n8n-data:
+  n8n_data:

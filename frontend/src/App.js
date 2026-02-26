@@ -16,6 +16,8 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer"
 import Explore from "./pages/Explore";
 import AIFlowchart from "./pages/AIFlowchart";
+import ScrollToTop from "./components/ScrollToTop";
+
 
 
 
@@ -23,6 +25,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+      <ScrollToTop />
         <div className="min-h-screen flex flex-col bg-slate-50 font-sans text-slate-900">
           <Navbar />
           <main className="flex-grow pt-[70px]">
