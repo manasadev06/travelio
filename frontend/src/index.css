@@ -248,3 +248,18 @@ label {
 .text-shadow {
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
+
+@keyframes toastSlide {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.animate-toast {
+  animation: toastSlide 0.4s ease forwards;
+}
