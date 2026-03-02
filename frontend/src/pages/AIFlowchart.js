@@ -101,7 +101,7 @@ export default function AIFlowchart() {
     });
 
     try {
-      const res = await fetch("http://localhost:5678/webhook/get-name", {
+      const res = await fetch("http://localhost:5678/webhook/get-names", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
@@ -159,7 +159,7 @@ export default function AIFlowchart() {
       setEdges(transformedGraph.edges);
     } catch (err) {
       console.error(err);
-      setError("Could not connect to AI service. Is n8n running?");
+      setError("Could not connect to AI service. Please try again.");
     } finally {
       setLoading(false);
     }
