@@ -8,6 +8,8 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
+const cors = require("cors");
+app.use(cors());
 
 // -------------------- MONGODB CONNECTION --------------------
 mongoose
@@ -47,6 +49,9 @@ app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
 
+app.get("/", (req, res) => {
+  res.send("Travelio API is running 🚀");
+});
 // -------------------- START SERVER --------------------
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
