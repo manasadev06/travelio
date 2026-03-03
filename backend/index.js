@@ -21,7 +21,7 @@ mongoose
 // -------------------- MIDDLEWARE --------------------
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://travelio-tau.vercel.app/"
+  "https://travelio-tau.vercel.app"
 ];
 
 app.use(cors({
