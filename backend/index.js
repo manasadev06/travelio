@@ -8,7 +8,6 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
-app.use(cors());
 
 // -------------------- MONGODB CONNECTION --------------------
 mongoose
@@ -22,7 +21,7 @@ mongoose
 // -------------------- MIDDLEWARE --------------------
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://travelio-frontend.onrender.com"
+  "https://travelio-tau.vercel.app/"
 ];
 
 app.use(cors({
@@ -53,12 +52,14 @@ app.use("/api/posts", postRoutes);
 app.use("/api/admin", adminRoutes);
 
 // -------------------- 404 --------------------
-app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
-});
+
 
 app.get("/", (req, res) => {
   res.send("Travelio API is running 🚀");
+});
+
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
 });
 // -------------------- START SERVER --------------------
 app.listen(PORT, "0.0.0.0", () => {
