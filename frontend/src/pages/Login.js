@@ -59,6 +59,9 @@ const location = useLocation();
   message: "Welcome back! Your journey continues.", 
   type: "success" 
 });
+const location = useLocation();
+const from = location.state?.from || "/";
+navigate(from);
 
       // ✅ Delay navigation so toast is visible
       setTimeout(() => {
