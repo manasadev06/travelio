@@ -48,7 +48,7 @@ export default function Navbar() {
       ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100' : 'bg-transparent'}`}>
       
       <Link to="/" className="text-2xl font-bold text-teal-700 flex items-center gap-2 hover:scale-105 transition-transform">
-        🌍 TravelPlan
+        🌍 Travelio
       </Link>
 
       <button
