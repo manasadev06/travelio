@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 export default function Navbar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -67,7 +68,7 @@ export default function Navbar() {
         to="/"
         className="text-2xl font-bold text-teal-700 flex items-center gap-2 hover:scale-105 transition-transform"
       >
-        🌍 TravelPlan
+        🌍 Travelio
       </Link>
 
       <button

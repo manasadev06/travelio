@@ -1,67 +1,79 @@
-import { useState, useRef, useEffect } from "react";
-import DayCard from "./DayCard";
-import "./DayCarousel.css";
+import { useState } from "react";
 
-export default function DayCarousel({ days = [] }) {
+export default function DayCarousel({ days }) {
+  const [current, setCurrent] = useState(0);
 
-    const [current, setCurrent] = useState(0);
-    const trackRef = useRef(null);
-    const [cardWidth, setCardWidth] = useState(0);
+  if (!days || days.length === 0) return null;
 
-    useEffect(() => {
-        if (trackRef.current) {
-            const firstCard = trackRef.current.querySelector(".card-item");
+  const day = days[current];
 
-            if (firstCard) {
-                const cardStyle = window.getComputedStyle(firstCard);
-                const trackStyle = window.getComputedStyle(trackRef.current);
+  return (
+    <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+      <h3 className="text-xl font-bold mb-2">
+        Day {day.day}: {day.title}
+      </h3>
 
-                const gap = parseInt(trackStyle.gap || 0);
-                const width = firstCard.offsetWidth + gap;
+      <p className="text-gray-600 mb-4">{day.theme}</p>
 
-                setCardWidth(width);
-            }
-        }
-    }, [days]);
+      <div className="space-y-4">
+        {day.places?.map((place, index) => (
+  <div
+    key={index}
+    className="flex gap-6 p-5 border rounded-xl bg-gray-50"
+  >
+    {/* LEFT SIDE - TEXT */}
+    <div className="flex-1">
+      <h4 className="font-semibold text-lg text-gray-800">
+        {place.name}
+      </h4>
 
+      <p className="text-sm text-gray-600 mt-1">
+        {place.description}
+      </p>
 
-    const next = () => {
-        if (current < days.length - 4) {
-            setCurrent(current + 1);
-        }
-    };
+      <p className="text-sm text-gray-500 mt-3">
+        🕒 {place.time}
+      </p>
 
-    const prev = () => {
-        if (current > 0) {
-            setCurrent(current - 1);
-        }
-    };
+      <p className="text-sm text-teal-600 mt-1">
+        🚗 {place.transport?.mode} • {place.transport?.duration}
+      </p>
+    </div>
 
-    return (
-        <div className="carousel-wrapper">
-            <button className="arrow left" onClick={prev}>❮</button>
+    {/* RIGHT SIDE - IMAGE */}
+    {place.image && (
+      <div className="w-40 h-32 flex-shrink-0 overflow-hidden rounded-lg">
+        <img
+          src={place.image}
+          alt={place.name}
+          className="w-full h-full object-cover rounded-lg"
+        />
+      </div>
+    )}
+  </div>
+))}
+      </div>
 
-            <div className="carousel-outer">
-                <div className="carousel-container">
-                    <div
-                        className="carousel-track"
-                        ref={trackRef}
-                        style={{
-                            transform: `translateX(-${current * cardWidth}px)`
-                        }}
-                    >
-                        {days.map((item) => (
-                            <div className="card-item" key={item.day}>
-                                <DayCard {...item} />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
+      {/* Navigation */}
+      <div className="flex justify-between mt-6">
+        <button
+          onClick={() => setCurrent((prev) => Math.max(prev - 1, 0))}
+          disabled={current === 0}
+          className="px-4 py-2 bg-gray-200 rounded"
+        >
+          Prev
+        </button>
 
-            <button className="arrow right" onClick={next}>❯</button>
-        </div>
-    );
+        <button
+          onClick={() =>
+            setCurrent((prev) => Math.min(prev + 1, days.length - 1))
+          }
+          disabled={current === days.length - 1}
+          className="px-4 py-2 bg-teal-600 text-white rounded"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
 }
-
-
