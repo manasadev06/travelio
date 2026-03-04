@@ -19,12 +19,21 @@ mongoose
   });
 
 // -------------------- MIDDLEWARE --------------------
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    credentials: true,
-  })
-);
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://travelio-tau.vercel.app"
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -43,10 +52,15 @@ app.use("/api/posts", postRoutes);
 app.use("/api/admin", adminRoutes);
 
 // -------------------- 404 --------------------
+
+
+app.get("/", (req, res) => {
+  res.send("Travelio API is running 🚀");
+});
+
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
-
 // -------------------- START SERVER --------------------
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
