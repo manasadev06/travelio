@@ -31,7 +31,7 @@ export default function ExploreTrips() {
         params.append('destination', destinationFilter);
       }
 
-      const response = await api.get(`/trips?${params}`);
+      const response = await api.get(`/trips?destination=${searchQuery}`);
       const data = response.data;
 
       if (reset) {
@@ -67,7 +67,7 @@ export default function ExploreTrips() {
         limit: 12
       });
 
-      const response = await api.get(`/search/trips?${params}`);
+      const response = await api.get(`/trips?destination=${searchQuery}`);
       const data = response.data;
 
       setTrips(data.trips);

@@ -17,7 +17,9 @@ import Footer from "./components/Footer"
 import Explore from "./pages/Explore";
 import AIFlowchart from "./pages/AIFlowchart";
 import ScrollToTop from "./components/ScrollToTop";
+import Destination from "./pages/Destination";
 
+<Route path="/destination/:slug" element={<Destination />} />
 
 
 

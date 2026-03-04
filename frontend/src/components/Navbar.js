@@ -54,21 +54,13 @@ export default function Navbar() {
     }
   }
 
-  return (
-    <nav
-      className={`fixed top-0 left-0 w-full h-[70px] z-50 transition-all duration-300 px-4 md:px-8 flex items-center justify-between
-      ${
-        scrolled
-          ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100"
-          : "bg-transparent"
-      }`}
-    >
-      <Link
-        to="/"
-        className="text-2xl font-bold text-teal-700 flex items-center gap-2 hover:scale-105 transition-transform"
-      >
-        🌍 TravelPlan
-      </Link>
+ return (
+  <nav className={`fixed top-0 left-0 w-full h-[70px] z-50 transition-all duration-300 px-4 md:px-8 flex items-center justify-between
+    ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100' : 'bg-transparent'}`}>
+    
+    <Link to="/" className="text-2xl font-bold text-teal-700 flex items-center gap-2 hover:scale-105 transition-transform">
+      🌍 Travelio
+    </Link>
 
       <button
         className="md:hidden text-2xl text-gray-700 p-2 focus:outline-none"
