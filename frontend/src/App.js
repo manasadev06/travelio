@@ -11,7 +11,7 @@ import TripDetails from "./pages/TripDetails";
 import UserProfile from "./pages/UserProfile";
 import SearchResults from "./pages/SearchResults";
 import { AuthProvider } from "./context/AuthContext";
-import ProtectedRoute from "./components/protectedRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer"
 import Explore from "./pages/Explore";
@@ -42,7 +42,14 @@ export default function App() {
               <Route path="/user/:id" element={<UserProfile />} />
               <Route path="/search" element={<SearchResults />} />
               <Route path="/destination/:slug" element={<DestinationDetails />} />
-              <Route path="/ai-planner" element={<AIFlowchart />} />
+              <Route
+  path="/ai-planner"
+  element={
+    <ProtectedRoute>
+      <AIFlowchart />
+    </ProtectedRoute>
+  }
+/>
               <Route
                 path="/dashboard"
                 element={

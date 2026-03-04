@@ -59,7 +59,7 @@ const location = useLocation();
   message: "Welcome back! Your journey continues.", 
   type: "success" 
 });
-
+const from = location.state?.from || "/";
       // ✅ Delay navigation so toast is visible
       setTimeout(() => {
          navigate("/");

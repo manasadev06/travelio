@@ -2,7 +2,7 @@ import { Link,useNavigate } from "react-router-dom";
 import { destinations } from "../data/destinations";
 import { useEffect, useState} from "react";
 import { useAuth } from "../context/AuthContext";
-
+import { toast } from "react-toastify";
 
  const heroImages = [
     "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=2021&q=80",
@@ -46,6 +46,14 @@ const handleStartSharing = () => {
     navigate("/login");
   }
 };
+function handlePlanWithAI() {
+  if (user) {
+    navigate("/ai-planner");
+  } else {
+    toast.warning("Please login to continue");
+    navigate("/login", { state: { from: "/ai-planner" } });
+  }
+}
 
 const handleGenerateTrip = () => {
   if (user) {
@@ -107,9 +115,19 @@ const handleGenerateTrip = () => {
             <Link to="/explore" className="px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-full transition-all hover:scale-105 shadow-lg shadow-teal-900/20 flex items-center justify-center gap-2">
               🌍 Start Exploring
             </Link>
-            <Link to="/ai-planner" className="px-8 py-4 bg-white hover:bg-gray-100 text-teal-900 font-bold rounded-full transition-all hover:scale-105 shadow-lg flex items-center justify-center gap-2">
-              🤖 Plan with AI
-            </Link>
+            <Link
+  to="/ai-planner"
+  onClick={(e) => {
+    if (!user) {
+      e.preventDefault();
+      toast.warning("Please login to continue");
+      navigate("/login", { state: { from: "/ai-planner" } });
+    }
+  }}
+  className="px-8 py-4 bg-white hover:bg-gray-100 text-teal-900 font-bold rounded-full transition-all hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+>
+  🤖 Plan with AI
+</Link>
           </div>
         </div>
       </section>
