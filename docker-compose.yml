@@ -1,24 +1,6 @@
+version: "3.9"
+
 services:
-
-  backend:
-    build:
-      context: ./backend
-    container_name: travelio-backend
-    ports:
-      - "5000:5000"
-    env_file:
-      - ./backend/.env
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./frontend
-    container_name: travelio-frontend
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-    restart: unless-stopped
 
   n8n:
     image: n8nio/n8n:latest
@@ -32,8 +14,6 @@ services:
       - GENERIC_TIMEZONE=Asia/Kolkata
     volumes:
       - n8n_data:/home/node/.n8n
-    depends_on:
-      - backend
     restart: unless-stopped
 
 volumes:
