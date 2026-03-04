@@ -18,6 +18,7 @@ import Explore from "./pages/Explore";
 import AIFlowchart from "./pages/AIFlowchart";
 import ScrollToTop from "./components/ScrollToTop";
 import Destination from "./pages/Destination";
+import AIFlowchart from "./components/AIFlowchart";
 
 <Route path="/destination/:slug" element={<Destination />} />
 
@@ -46,7 +47,7 @@ export default function App() {
   path="/ai-planner"
   element={
     <ProtectedRoute>
-      <AIPlanner />
+      <AIFlowchart />
     </ProtectedRoute>
   }
 />
