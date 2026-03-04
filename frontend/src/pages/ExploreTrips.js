@@ -16,6 +16,9 @@ export default function ExploreTrips() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
+  useEffect(() => {
+  searchTrips(searchQuery, 1);
+}, [searchQuery]);
   const fetchTrips = async (page = 1, reset = false) => {
     try {
       setLoading(true);
@@ -67,7 +70,7 @@ export default function ExploreTrips() {
         limit: 12
       });
 
-      const response = await api.get(`/trips?destination=${searchQuery}`);
+      const response = await api.get(`/trips?destination=${query}`);
       const data = response.data;
 
       setTrips(data.trips);
