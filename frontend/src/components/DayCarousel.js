@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function DayCarousel({ days }) {
+export default function DayCarousel({ days, setHoveredLocation, getCoordinates  }) {
   const [current, setCurrent] = useState(0);
 
   if (!days || days.length === 0) return null;
@@ -17,10 +17,20 @@ export default function DayCarousel({ days }) {
 
       <div className="space-y-4">
         {day.places?.map((place, index) => (
-  <div
-    key={index}
-    className="flex gap-6 p-5 border rounded-xl bg-gray-50"
-  >
+          <div
+  key={index}
+  className="flex gap-6 p-5 border rounded-xl bg-gray-50 
+  hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer"
+  onMouseEnter={async () => {
+    const coords = await getCoordinates(place.name);
+
+    console.log("Geocoded:", coords);
+
+    if (coords) {
+      setHoveredLocation(coords);
+    }
+  }}
+>
     {/* LEFT SIDE - TEXT */}
     <div className="flex-1">
       <h4 className="font-semibold text-lg text-gray-800">
