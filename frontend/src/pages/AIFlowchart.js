@@ -100,11 +100,21 @@ const nodeTypes = {
   editable: EditableNode
 };
 
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function getCoordinates(place) {
   try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place)}&format=json&limit=1`;
 
-    const res = await fetch(url);
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place)}&format=json&limit=1&countrycodes=in`;
+
+    const res = await fetch(url, {
+      headers: {
+        "Accept": "application/json"
+      }
+    });
+
     const data = await res.json();
 
     if (data.length > 0) {
@@ -116,6 +126,7 @@ async function getCoordinates(place) {
     }
 
     return null;
+
   } catch (error) {
     console.log("Geocode failed for:", place);
     return null;
