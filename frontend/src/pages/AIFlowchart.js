@@ -10,7 +10,7 @@ import ReactFlow, {
   addEdge
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { MapContainer, TileLayer, Marker, Popup  } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline  } from "react-leaflet";
 import { Handle, Position } from "reactflow";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
@@ -107,7 +107,7 @@ function delay(ms) {
 async function getCoordinates(place) {
   try {
 
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place)}&format=json&limit=1&countrycodes=in`;
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place)}&format=json&limit=1&format=json&limit=1`;
 
     const res = await fetch(url, {
       headers: {
@@ -139,12 +139,39 @@ export default function AIFlowchart() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [hoveredLocation, setHoveredLocation] = useState(null);
+  const [previousLocation, setPreviousLocation] = useState(null);
+  const [routeCoords, setRouteCoords] = useState([]);
   const [plan, setPlan] = useState({
     text: "",
     graph: { nodes: [], edges: [] },
     days: []
   });
-  
+    // 👇 ADD THIS FUNCTION HERE
+  async function fetchRoute(start, end) {
+        if (!start || !end) return;
+        if (!start.lat || !start.lng || !end.lat || !end.lng) return;
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.routes && data.routes.length > 0) {
+          const coords = data.routes[0].geometry.coordinates
+            .map(c => {
+              if (!c || c.length < 2) return null;
+              return [c[1], c[0]];
+            })
+            .filter(Boolean);   // removes null values
+
+          setRouteCoords(coords);
+          
+      }
+
+    } catch (err) {
+      console.log("Route error:", err);
+    }
+  }
   const [error, setError] = useState("");
 
   const generateFlowchart = async () => {
@@ -338,8 +365,22 @@ export default function AIFlowchart() {
                 </h3>
                 <DayCarousel
                   days={plan.days}
-                  setHoveredLocation={setHoveredLocation}
-                    getCoordinates={getCoordinates}
+                  setHoveredLocation={(loc) => {
+                    setPreviousLocation(hoveredLocation);
+                    setHoveredLocation(loc);
+                    setRouteCoords([]);
+                    if (
+                      hoveredLocation &&
+                      loc &&
+                      hoveredLocation.lat &&
+                      hoveredLocation.lng &&
+                      loc.lat &&
+                      loc.lng
+                    ) {
+                      fetchRoute(hoveredLocation, loc);
+                    }
+                  }}
+                  getCoordinates={getCoordinates}
                 />
               </div>
             )}
@@ -366,6 +407,15 @@ export default function AIFlowchart() {
                 <Popup>{hoveredLocation.name}</Popup>
               </Marker>
             )}
+
+            {Array.isArray(routeCoords) &&
+              routeCoords.length > 1 &&
+              routeCoords.every(p => Array.isArray(p) && p.length === 2) && (
+                <Polyline
+                  positions={routeCoords}
+                  pathOptions={{ color: "red", weight: 5 }}
+                />
+              )}
           </MapContainer>
       </div>
 

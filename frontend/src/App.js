@@ -18,6 +18,8 @@ import Explore from "./pages/Explore";
 import AIFlowchart from "./pages/AIFlowchart";
 import ScrollToTop from "./components/ScrollToTop";
 import Destination from "./pages/Destination";
+import { TripProvider } from "./context/TripContext";
+
 
 <Route path="/destination/:slug" element={<Destination />} />
 
