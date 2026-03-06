@@ -1,5 +1,6 @@
 const express = require("express");
 const Trip = require("../models/Trip"); // Using the new model
+const SavedTrip = require("../models/SavedTrip");
 const auth = require("../middleware/auth");
 const multer = require("multer");
 const path = require("path");
@@ -202,6 +203,109 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ message: "Trip not found" });
     }
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
+ * POST /api/trips/:id/save
+ * Save a trip for a user
+ */
+router.post("/:id/save", auth, async (req, res) => {
+  try {
+
+    const tripId = req.params.id;
+
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+
+    // Check if already saved
+    const existing = await SavedTrip.findOne({
+      user: req.user.id,
+      trip: tripId
+    });
+
+    if (existing) {
+      return res.status(400).json({ message: "Trip already saved" });
+    }
+
+    const savedTrip = new SavedTrip({
+      user: req.user.id,
+      trip: tripId
+    });
+
+    await savedTrip.save();
+
+    res.json({ message: "Trip saved successfully" });
+
+  } catch (error) {
+    console.error("Error saving trip:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
+ * GET /api/trips/saved
+ * Get trips saved by logged in user
+ */
+router.get("/saved/my-trips", auth, async (req, res) => {
+  try {
+
+    const savedTrips = await SavedTrip.find({
+      user: req.user.id
+    }).populate("trip");
+
+    const trips = savedTrips.map(item => item.trip);
+
+    res.json(trips);
+
+  } catch (error) {
+    console.error("Error fetching saved trips:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
+ * POST /api/trips/save-ai-plan
+ * Save AI generated plan
+ */
+router.post("/save-ai-plan", auth, async (req, res) => {
+  try {
+
+    const { prompt, plan } = req.body;
+
+    const newTrip = new Trip({
+      title: prompt || "AI Generated Trip",
+      destination: "AI Planner",
+      trip_type: "AI",
+      duration: plan?.days?.length || 1,
+      short_summary: "AI generated trip plan",
+      description: plan?.text || "",
+      itinerary: JSON.stringify(plan?.days || []),
+      total_budget: 0,
+      accommodation_cost: 0,
+      travel_cost: 0,
+      food_misc_cost: 0,
+      accommodation_type: "Not specified",
+      accommodation_name: "Not specified",
+      weather: "Unknown",
+      best_time_to_visit: "Anytime",
+      tags: ["AI"],
+      is_public: false,
+      cover_image: "uploads/ai-generated-trip.jpg",
+      user: req.user.id
+    });
+
+    const savedTrip = await newTrip.save();
+
+    res.json(savedTrip);
+
+  } catch (error) {
+
+    console.error("SAVE AI TRIP ERROR:", error);
+    res.status(500).json({ message: error.message });
+
   }
 });
 
