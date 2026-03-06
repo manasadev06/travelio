@@ -19,7 +19,7 @@ import AIFlowchart from "./pages/AIFlowchart";
 import ScrollToTop from "./components/ScrollToTop";
 import Destination from "./pages/Destination";
 import { TripProvider } from "./context/TripContext";
-
+import MyTrips from "./pages/MyTrips";
 
 <Route path="/destination/:slug" element={<Destination />} />
 
@@ -44,6 +44,7 @@ export default function App() {
               <Route path="/user/:id" element={<UserProfile />} />
               <Route path="/search" element={<SearchResults />} />
               <Route path="/destination/:slug" element={<DestinationDetails />} />
+              <Route path="/my-trips" element={<MyTrips />} />
               <Route
   path="/ai-planner"
   element={

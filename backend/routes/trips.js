@@ -259,12 +259,29 @@ router.get("/saved/my-trips", auth, async (req, res) => {
     const trips = savedTrips.map(item => item.trip);
 
     res.json(trips);
+    console.log("USER ID:", req.user.id);
 
   } catch (error) {
     console.error("Error fetching saved trips:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
+router.get("/:id", async (req, res) => {
+  try {
+    const trip = await Trip.findById(req.params.id);
+
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+
+    res.json(trip);
+  } catch (error) {
+    console.error("Error fetching trip:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 /**
  * POST /api/trips/save-ai-plan
@@ -305,6 +322,22 @@ router.post("/save-ai-plan", auth, async (req, res) => {
 
     console.error("SAVE AI TRIP ERROR:", error);
     res.status(500).json({ message: error.message });
+
+  }
+});
+
+router.get("/my-trips", auth, async (req, res) => {
+  try {
+
+    const trips = await Trip.find({ user: req.user.id })
+      .sort({ createdAt: -1 });
+
+    res.json(trips);
+
+  } catch (error) {
+
+    console.error("FETCH MY TRIPS ERROR:", error);
+    res.status(500).json({ message: "Failed to fetch trips" });
 
   }
 });

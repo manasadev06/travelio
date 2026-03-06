@@ -142,6 +142,21 @@ return (
           </NavLink>
         </li>
 
+        <li>
+          <NavLink
+            to="/my-trips"
+            className={({ isActive }) =>
+              `px-4 py-2 rounded-full font-medium transition-all ${
+                isActive
+                  ? "bg-teal-50 text-teal-700"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-teal-600"
+              }`
+            }
+          >
+            My-trips
+          </NavLink>
+        </li>
+
         {!user ? (
           <>
             <li className="ml-4">
