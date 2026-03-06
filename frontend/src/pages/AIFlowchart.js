@@ -1,5 +1,6 @@
 import { useState,useEffect } from "react";
 import "leaflet/dist/leaflet.css";
+import API from "../api/api";
 import DayCarousel from "../components/DayCarousel";
 import ReactFlow, {
   Background,
@@ -55,7 +56,6 @@ function EditableNode({ id, data }) {
       )
     );
   };
-
   
   return (
     <div
@@ -96,9 +96,7 @@ function EditableNode({ id, data }) {
   );
 }
 
-const nodeTypes = {
-  editable: EditableNode
-};
+const nodeTypes = {  editable: EditableNode };
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -172,6 +170,27 @@ export default function AIFlowchart() {
       console.log("Route error:", err);
     }
   }
+
+  const saveTrip = async () => {
+  try {
+
+    const res = await API.post("/trips/save-ai-plan", {
+      prompt,
+      plan
+    });
+
+    console.log(res.data);
+
+    alert("Trip saved successfully");
+
+  } catch (error) {
+
+    console.error(error);
+    alert("Failed to save trip");
+
+  }
+};
+
   const [error, setError] = useState("");
 
   const generateFlowchart = async () => {
@@ -287,6 +306,9 @@ export default function AIFlowchart() {
                     }`}
                 >
                   {loading ? "Generating..." : "Generate Plan"}
+                </button>
+                <button onClick={saveTrip}>
+                  Save Trip
                 </button>
               </div>
 
