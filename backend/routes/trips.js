@@ -95,8 +95,10 @@ router.post("/save-ai-plan", auth, async (req, res) => {
 router.get("/my-trips", auth, async (req, res) => {
   try {
 
-    const trips = await Trip.find({ user: req.user.id })
-      .sort({ createdAt: -1 });
+    const trips = await Trip.find({
+      user: req.user.id,
+      trip_type: "AI"
+    }).sort({ createdAt: -1 });
 
     res.json(trips);
 
@@ -107,8 +109,6 @@ router.get("/my-trips", auth, async (req, res) => {
 
   }
 });
-
-
 
 const upload = multer({ storage: storage });
 
