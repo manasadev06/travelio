@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import API from "../api/api";
+import { useNavigate } from "react-router-dom";
 
 export default function MyTrips() {
-
+  const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
 
   useEffect(() => {
@@ -37,25 +38,29 @@ export default function MyTrips() {
 
         {trips.map(trip => (
 
-          <div key={trip._id} className="bg-white p-4 rounded-xl shadow">
+  <div
+    key={trip._id}
+    onClick={() => navigate(`/trip/${trip._id}`)}
+    className="bg-white p-4 rounded-xl shadow cursor-pointer hover:shadow-lg transition"
+  >
 
-            <img
-              src={`http://localhost:5000/${trip.cover_image}`}
-              alt=""
-              className="rounded-lg mb-3"
-            />
+    <img
+      src={`http://localhost:5000/${trip.cover_image}`}
+      alt=""
+      className="rounded-lg mb-3"
+    />
 
-            <h3 className="font-bold">
-              {trip.title}
-            </h3>
+    <h3 className="font-bold">
+      {trip.title}
+    </h3>
 
-            <p className="text-sm text-gray-600">
-              {trip.short_summary}
-            </p>
+    <p className="text-sm text-gray-600">
+      {trip.short_summary}
+    </p>
 
-          </div>
+  </div>
 
-        ))}
+))}
 
       </div>
 
