@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-
+import logo from "../assets/logo.png";
 export default function Footer() {
     return (
         <footer className="bg-white border-t border-gray-200 pt-16 pb-8 mt-auto">
@@ -9,7 +9,8 @@ export default function Footer() {
                     {/* Brand Section */}
                     <div className="space-y-4">
                         <Link to="/" className="text-2xl font-bold text-teal-700 flex items-center gap-2">
-                            🌍 TravelPlan
+                            <img src={logo} alt="logo" className="w-8 h-8 object-contain" />
+                                   Travelio
                         </Link>
                         <p className="text-gray-500 leading-relaxed max-w-xs">
                             Your ultimate AI-powered travel companion. 
