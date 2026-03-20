@@ -207,7 +207,7 @@ export default function AIFlowchart() {
     });
 
     try {
-      const res = await fetch("http://localhost:5678/webhook/get-name", {
+      const res = await fetch("https://h3m15s22m50.app.n8n.cloud/webhook/get-name", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
