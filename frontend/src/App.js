@@ -46,13 +46,13 @@ export default function App() {
               <Route path="/destination/:slug" element={<DestinationDetails />} />
               <Route path="/my-trips" element={<MyTrips />} />
               <Route
-  path="/ai-planner"
-  element={
-    <ProtectedRoute>
-      <AIFlowchart />
-    </ProtectedRoute>
-  }
-/>
+                path="/ai-planner"
+                element={
+                  <ProtectedRoute>
+                    <AIFlowchart />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/dashboard"
                 element={
