@@ -2,7 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
-
+import logo from "../assets/logo.png";
 export default function Navbar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -65,10 +65,11 @@ return (
     }`}
   >
     <Link
-      to="/"
+      to="C:\Epic Gamez\Mini Project\Travelio\travelio\frontend\public\logo.png"
       className="text-2xl font-bold text-teal-700 flex items-center gap-2 hover:scale-105 transition-transform"
     >
-      🌍 Travelio
+      <img src={logo} alt="logo" className="w-8 h-8 object-contain" />
+       Travelio
     </Link>
       <button
         className="md:hidden text-2xl text-gray-700 p-2 focus:outline-none"
@@ -139,6 +140,21 @@ return (
             }
           >
             🌍 Explore
+          </NavLink>
+        </li>
+
+        <li>
+          <NavLink
+            to="/my-trips"
+            className={({ isActive }) =>
+              `px-4 py-2 rounded-full font-medium transition-all ${
+                isActive
+                  ? "bg-teal-50 text-teal-700"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-teal-600"
+              }`
+            }
+          >
+            My-trips
           </NavLink>
         </li>
 
