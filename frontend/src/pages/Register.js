@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/api";
+import Toast from "../components/Toast";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export default function Register() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -50,8 +52,23 @@ export default function Register() {
         password: form.password,
       });
 
-      navigate("/login");
+      // ✅ Premium Success Toast
+      setToast({
+  message: "Your journey begins now. Welcome to Travelio.",
+  type: "success",
+});
+
+setTimeout(() => {
+  navigate("/login", {
+    state: { message: "Please log in to continue." },
+  });
+}, 2100);
+
     } catch (err) {
+      setToast({
+        message: err.response?.data?.message || "Registration failed.",
+        type: "error",
+      });
       setError(err.response?.data?.message || "Registration failed");
     } finally {
       setLoading(false);
@@ -60,27 +77,37 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 page-wrapper">
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl animate-fade-in border border-gray-100">
         <div className="text-center">
-          <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Create Account</h1>
-          <p className="text-gray-600">Join TravelPlan to start your journey</p>
+          <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
+            Create Account
+          </h1>
+          <p className="text-gray-600">
+            Join Travelio to start your journey
+          </p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-              <div className="flex">
-                <div className="flex-shrink-0 text-red-500">⚠️</div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              </div>
+              <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
 
           <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Full Name
+              </label>
               <input
                 type="text"
                 name="name"
@@ -92,7 +119,9 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
               <input
                 type="email"
                 name="email"
@@ -104,7 +133,9 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
               <input
                 type="password"
                 name="password"
@@ -116,7 +147,9 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password
+              </label>
               <input
                 type="password"
                 name="confirmPassword"
@@ -130,8 +163,8 @@ export default function Register() {
 
           <button
             type="submit"
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all hover:-translate-y-0.5"
             disabled={loading}
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all hover:-translate-y-0.5 disabled:opacity-70"
           >
             {loading ? (
               <span className="flex items-center gap-2">
@@ -147,7 +180,10 @@ export default function Register() {
         <div className="text-center mt-6 pt-6 border-t border-gray-100">
           <p className="text-sm text-gray-600">
             Already have an account?{" "}
-            <Link to="/login" className="font-medium text-teal-600 hover:text-teal-500 hover:underline">
+            <Link
+              to="/login"
+              className="font-medium text-teal-600 hover:text-teal-500 hover:underline"
+            >
               Sign in
             </Link>
           </p>

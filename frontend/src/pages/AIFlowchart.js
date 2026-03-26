@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import "leaflet/dist/leaflet.css";
+import API from "../api/api";
 import DayCarousel from "../components/DayCarousel";
 import ReactFlow, {
   Background,
@@ -9,9 +11,34 @@ import ReactFlow, {
   addEdge
 } from "reactflow";
 import "reactflow/dist/style.css";
-
-import { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import { Handle, Position } from "reactflow";
+import { useMap } from "react-leaflet";
+import L from "leaflet";
+import customMarker from "../assets/marker.png";
+const customIcon = new L.Icon({
+  iconUrl: customMarker,
+  iconSize: [35, 45],     // adjust size
+  iconAnchor: [17, 45],   // bottom center of marker
+  popupAnchor: [0, -40]   // popup position
+});
+
+function MapUpdater({ location }) {
+  const map = useMap();
+
+  if (location) {
+    map.flyTo([location.lat, location.lng], 10);
+  }
+
+  return null;
+}
+// const locationDB = {
+//   Manali: { lat: 32.2432, lng: 77.1892 },
+//   "Solang Valley": { lat: 32.3168, lng: 77.1569 },
+//   "Rohtang Pass": { lat: 32.3716, lng: 77.2462 },
+//   Delhi: { lat: 28.6139, lng: 77.2090 },
+//   Paris: { lat: 48.8566, lng: 2.3522 }
+// };
 
 /* Editable Ellipse Node */
 function EditableNode({ id, data }) {
@@ -69,21 +96,100 @@ function EditableNode({ id, data }) {
   );
 }
 
-const nodeTypes = {
-  editable: EditableNode
-};
+const nodeTypes = { editable: EditableNode };
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function getCoordinates(place) {
+  try {
+
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place)}&format=json&limit=1&format=json&limit=1`;
+
+    const res = await fetch(url, {
+      headers: {
+        "Accept": "application/json"
+      }
+    });
+
+    const data = await res.json();
+
+    if (data.length > 0) {
+      return {
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon),
+        name: place
+      };
+    }
+
+    return null;
+
+  } catch (error) {
+    console.log("Geocode failed for:", place);
+    return null;
+  }
+}
 
 export default function AIFlowchart() {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-
+  const [hoveredLocation, setHoveredLocation] = useState(null);
+  const [previousLocation, setPreviousLocation] = useState(null);
+  const [routeCoords, setRouteCoords] = useState([]);
   const [plan, setPlan] = useState({
     text: "",
     graph: { nodes: [], edges: [] },
     days: []
   });
+  // 👇 ADD THIS FUNCTION HERE
+  async function fetchRoute(start, end) {
+    if (!start || !end) return;
+    if (!start.lat || !start.lng || !end.lat || !end.lng) return;
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.routes && data.routes.length > 0) {
+        const coords = data.routes[0].geometry.coordinates
+          .map(c => {
+            if (!c || c.length < 2) return null;
+            return [c[1], c[0]];
+          })
+          .filter(Boolean);   // removes null values
+
+        setRouteCoords(coords);
+
+      }
+
+    } catch (err) {
+      console.log("Route error:", err);
+    }
+  }
+
+  const saveTrip = async () => {
+    try {
+
+      const res = await API.post("/trips/save-ai-plan", {
+        prompt,
+        plan
+      });
+
+      console.log(res.data);
+
+      alert("Trip saved successfully");
+
+    } catch (error) {
+
+      console.error(error);
+      alert("Failed to save trip");
+
+    }
+  };
 
   const [error, setError] = useState("");
 
@@ -166,74 +272,77 @@ export default function AIFlowchart() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
-            🤖 AI Trip Flowchart
-          </h1>
-          <p className="text-lg text-gray-600">
-            Describe a trip idea and get a visual flowchart.
-          </p>
-        </div>
-
-        {/* Input */}
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <input
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && generateFlowchart()}
-              placeholder="e.g. 3 day trip to Manali"
-              className="flex-1 px-4 py-3 rounded-xl border border-gray-300"
-            />
-
-            <button
-              onClick={generateFlowchart}
-              disabled={loading}
-              className={`px-8 py-3 rounded-xl font-bold text-white
-                ${loading
-                  ? "bg-gray-400"
-                  : "bg-teal-600 hover:bg-teal-700"
-                }`}
-            >
-              {loading ? "Generating..." : "Generate Plan"}
-            </button>
+    <div className="max-w-7xl mx-auto grid grid-cols-[1fr_420px] gap-8">
+      <div className="flex-1">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
+              🤖 AI Trip Flowchart
+            </h1>
+            <p className="text-lg text-gray-600">
+              Describe a trip idea and get a visual flowchart.
+            </p>
           </div>
 
-          {error && (
-            <div className="mt-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
-        </div>
+          {/* Input */}
+          <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <input
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && generateFlowchart()}
+                placeholder="e.g. 3 day trip to Manali"
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-300"
+              />
 
-        {/* TEXT PLAN */}
-        {plan.text && (
-          <div className="mt-8">
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                📋 AI Explanation
-              </h3>
-              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 whitespace-pre-wrap">
-                {plan.text}
+              <button
+                onClick={generateFlowchart}
+                disabled={loading}
+                className={`px-8 py-3 rounded-xl font-bold text-white
+                    ${loading
+                    ? "bg-gray-400"
+                    : "bg-teal-600 hover:bg-teal-700"
+                  }`}
+              >
+                {loading ? "Generating..." : "Generate Plan"}
+              </button>
+              <button onClick={saveTrip}>
+                Save Trip
+              </button>
+            </div>
+
+            {error && (
+              <div className="mt-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+          </div>
+
+          {/* TEXT PLAN */}
+          {plan.text && (
+            <div className="mt-8">
+              <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+                <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                  📋 AI Explanation
+                </h3>
+                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 whitespace-pre-wrap">
+                  {plan.text}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* FLOWCHART */}
-        {plan.graph?.nodes?.length > 0 && (
-          <div className="mt-8">
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 w-full overflow-hidden">
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                🗺️ Flowchart
-              </h3>
+          {/* FLOWCHART */}
+          {plan.graph?.nodes?.length > 0 && (
+            <div className="mt-8">
+              <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 w-full overflow-hidden">
+                <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                  🗺️ Flowchart
+                </h3>
 
-              <div style={{ height: 500, padding: 20 }}>
-                <button
+                <div style={{ height: 500, padding: 20 }}>
+                  <button
                     onClick={() => {
                       const newNode = {
                         id: Date.now().toString(),
@@ -251,36 +360,87 @@ export default function AIFlowchart() {
                   >
                     ➕ Add Step
                   </button>
-                <ReactFlow
-                  nodes={nodes}
-                  edges={edges}
-                  nodeTypes={nodeTypes}
-                  onNodesChange={onNodesChange}
-                  onEdgesChange={onEdgesChange}
-                  onConnect={(params) => setEdges((eds) => addEdge(params, eds))}
-                  deleteKeyCode={['Backspace', 'Delete']}
-                  fitView
-                >
-                  <MiniMap />
-                  <Controls />
-                  <Background gap={12} size={1} />
-                </ReactFlow>
+                  <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    nodeTypes={nodeTypes}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={(params) => setEdges((eds) => addEdge(params, eds))}
+                    deleteKeyCode={['Backspace', 'Delete']}
+                    fitView
+                  >
+                    <MiniMap />
+                    <Controls />
+                    <Background gap={12} size={1} />
+                  </ReactFlow>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* DAY CAROUSEL */}
-        {plan.days.length > 0 && (
-          <div className="mt-12">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">
-              📅 Trip Breakdown
-            </h3>
-            <DayCarousel days={plan.days} />
-          </div>
-        )}
+          {/* DAY CAROUSEL */}
+          {plan.days.length > 0 && (
+            <div className="mt-12">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6">
+                📅 Trip Breakdown
+              </h3>
+              <DayCarousel
+                days={plan.days}
+                setHoveredLocation={(loc) => {
+                  setPreviousLocation(hoveredLocation);
+                  setHoveredLocation(loc);
+                  setRouteCoords([]);
+                  if (
+                    hoveredLocation &&
+                    loc &&
+                    hoveredLocation.lat &&
+                    hoveredLocation.lng &&
+                    loc.lat &&
+                    loc.lng
+                  ) {
+                    fetchRoute(hoveredLocation, loc);
+                  }
+                }}
+                getCoordinates={getCoordinates}
+              />
+            </div>
+          )}
 
+        </div>
       </div>
+
+      {/* RIGHT SIDE MAP */}
+      <div className="w-[450px] sticky top-8 h-[600px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <MapContainer
+          center={[20.5937, 78.9629]}
+          zoom={4}
+          style={{ height: "100%", width: "100%" }}
+        >
+          <TileLayer
+            attribution="&copy; OpenStreetMap contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+
+          <MapUpdater location={hoveredLocation} />
+
+          {hoveredLocation && (
+            <Marker position={[hoveredLocation.lat, hoveredLocation.lng]} icon={customIcon}>
+              <Popup>{hoveredLocation.name}</Popup>
+            </Marker>
+          )}
+
+          {Array.isArray(routeCoords) &&
+            routeCoords.length > 1 &&
+            routeCoords.every(p => Array.isArray(p) && p.length === 2) && (
+              <Polyline
+                positions={routeCoords}
+                pathOptions={{ color: "red", weight: 5 }}
+              />
+            )}
+        </MapContainer>
+      </div>
+
     </div>
   );
 }
