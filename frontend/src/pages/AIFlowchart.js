@@ -1,4 +1,4 @@
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 import "leaflet/dist/leaflet.css";
 import API from "../api/api";
 import DayCarousel from "../components/DayCarousel";
@@ -11,7 +11,7 @@ import ReactFlow, {
   addEdge
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { MapContainer, TileLayer, Marker, Popup, Polyline  } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import { Handle, Position } from "reactflow";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
@@ -56,7 +56,7 @@ function EditableNode({ id, data }) {
       )
     );
   };
-  
+
   return (
     <div
       onDoubleClick={() => setEditing(true)}
@@ -96,7 +96,7 @@ function EditableNode({ id, data }) {
   );
 }
 
-const nodeTypes = {  editable: EditableNode };
+const nodeTypes = { editable: EditableNode };
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -144,10 +144,10 @@ export default function AIFlowchart() {
     graph: { nodes: [], edges: [] },
     days: []
   });
-    // 👇 ADD THIS FUNCTION HERE
+  // 👇 ADD THIS FUNCTION HERE
   async function fetchRoute(start, end) {
-        if (!start || !end) return;
-        if (!start.lat || !start.lng || !end.lat || !end.lng) return;
+    if (!start || !end) return;
+    if (!start.lat || !start.lng || !end.lat || !end.lng) return;
     try {
       const url = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
 
@@ -155,15 +155,15 @@ export default function AIFlowchart() {
       const data = await res.json();
 
       if (data.routes && data.routes.length > 0) {
-          const coords = data.routes[0].geometry.coordinates
-            .map(c => {
-              if (!c || c.length < 2) return null;
-              return [c[1], c[0]];
-            })
-            .filter(Boolean);   // removes null values
+        const coords = data.routes[0].geometry.coordinates
+          .map(c => {
+            if (!c || c.length < 2) return null;
+            return [c[1], c[0]];
+          })
+          .filter(Boolean);   // removes null values
 
-          setRouteCoords(coords);
-          
+        setRouteCoords(coords);
+
       }
 
     } catch (err) {
@@ -172,24 +172,24 @@ export default function AIFlowchart() {
   }
 
   const saveTrip = async () => {
-  try {
+    try {
 
-    const res = await API.post("/trips/save-ai-plan", {
-      prompt,
-      plan
-    });
+      const res = await API.post("/trips/save-ai-plan", {
+        prompt,
+        plan
+      });
 
-    console.log(res.data);
+      console.log(res.data);
 
-    alert("Trip saved successfully");
+      alert("Trip saved successfully");
 
-  } catch (error) {
+    } catch (error) {
 
-    console.error(error);
-    alert("Failed to save trip");
+      console.error(error);
+      alert("Failed to save trip");
 
-  }
-};
+    }
+  };
 
   const [error, setError] = useState("");
 
@@ -208,7 +208,6 @@ export default function AIFlowchart() {
 
     try {
       const res = await fetch("https://hemanth34.app.n8n.cloud/webhook/get-name", {
-      
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
@@ -273,173 +272,173 @@ export default function AIFlowchart() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-[1fr_420px] gap-8">  
+    <div className="max-w-7xl mx-auto grid grid-cols-[1fr_420px] gap-8">
       <div className="flex-1">
         <div className="max-w-4xl mx-auto">
-        {/* Header */}
-            <div className="text-center mb-12">
-              <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
-                🤖 AI Trip Flowchart
-              </h1>
-              <p className="text-lg text-gray-600">
-                Describe a trip idea and get a visual flowchart.
-              </p>
-            </div>
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
+              🤖 AI Trip Flowchart
+            </h1>
+            <p className="text-lg text-gray-600">
+              Describe a trip idea and get a visual flowchart.
+            </p>
+          </div>
 
-            {/* Input */}
-            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <input
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && generateFlowchart()}
-                  placeholder="e.g. 3 day trip to Manali"
-                  className="flex-1 px-4 py-3 rounded-xl border border-gray-300"
-                />
+          {/* Input */}
+          <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <input
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && generateFlowchart()}
+                placeholder="e.g. 3 day trip to Manali"
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-300"
+              />
 
-                <button
-                  onClick={generateFlowchart}
-                  disabled={loading}
-                  className={`px-8 py-3 rounded-xl font-bold text-white
+              <button
+                onClick={generateFlowchart}
+                disabled={loading}
+                className={`px-8 py-3 rounded-xl font-bold text-white
                     ${loading
-                      ? "bg-gray-400"
-                      : "bg-teal-600 hover:bg-teal-700"
-                    }`}
-                >
-                  {loading ? "Generating..." : "Generate Plan"}
-                </button>
-                <button onClick={saveTrip}>
-                  Save Trip
-                </button>
-              </div>
-
-              {error && (
-                <div className="mt-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              )}
+                    ? "bg-gray-400"
+                    : "bg-teal-600 hover:bg-teal-700"
+                  }`}
+              >
+                {loading ? "Generating..." : "Generate Plan"}
+              </button>
+              <button onClick={saveTrip}>
+                Save Trip
+              </button>
             </div>
 
-            {/* TEXT PLAN */}
-            {plan.text && (
-              <div className="mt-8">
-                <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-                  <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                    📋 AI Explanation
-                  </h3>
-                  <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 whitespace-pre-wrap">
-                    {plan.text}
-                  </div>
-                </div>
+            {error && (
+              <div className="mt-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
+          </div>
 
-            {/* FLOWCHART */}
-            {plan.graph?.nodes?.length > 0 && (
-              <div className="mt-8">
-                <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 w-full overflow-hidden">
-                  <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                    🗺️ Flowchart
-                  </h3>
-
-                  <div style={{ height: 500, padding: 20 }}>
-                    <button
-                        onClick={() => {
-                          const newNode = {
-                            id: Date.now().toString(),
-                            type: "editable",
-                            position: { x: 250, y: nodes.length * 120 },
-                            data: {
-                              label: "New Step",
-                              setNodes
-                            }
-                          };
-
-                          setNodes((nds) => [...nds, newNode]);
-                        }}
-                        className="mb-4 px-4 py-2 bg-teal-600 text-white rounded-lg"
-                      >
-                        ➕ Add Step
-                      </button>
-                    <ReactFlow
-                      nodes={nodes}
-                      edges={edges}
-                      nodeTypes={nodeTypes}
-                      onNodesChange={onNodesChange}
-                      onEdgesChange={onEdgesChange}
-                      onConnect={(params) => setEdges((eds) => addEdge(params, eds))}
-                      deleteKeyCode={['Backspace', 'Delete']}
-                      fitView
-                    >
-                      <MiniMap />
-                      <Controls />
-                      <Background gap={12} size={1} />
-                    </ReactFlow>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* DAY CAROUSEL */}
-            {plan.days.length > 0 && (
-              <div className="mt-12">
-                <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                  📅 Trip Breakdown
+          {/* TEXT PLAN */}
+          {plan.text && (
+            <div className="mt-8">
+              <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+                <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                  📋 AI Explanation
                 </h3>
-                <DayCarousel
-                  days={plan.days}
-                  setHoveredLocation={(loc) => {
-                    setPreviousLocation(hoveredLocation);
-                    setHoveredLocation(loc);
-                    setRouteCoords([]);
-                    if (
-                      hoveredLocation &&
-                      loc &&
-                      hoveredLocation.lat &&
-                      hoveredLocation.lng &&
-                      loc.lat &&
-                      loc.lng
-                    ) {
-                      fetchRoute(hoveredLocation, loc);
-                    }
-                  }}
-                  getCoordinates={getCoordinates}
-                />
+                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 whitespace-pre-wrap">
+                  {plan.text}
+                </div>
               </div>
-            )}
+            </div>
+          )}
+
+          {/* FLOWCHART */}
+          {plan.graph?.nodes?.length > 0 && (
+            <div className="mt-8">
+              <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 w-full overflow-hidden">
+                <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                  🗺️ Flowchart
+                </h3>
+
+                <div style={{ height: 500, padding: 20 }}>
+                  <button
+                    onClick={() => {
+                      const newNode = {
+                        id: Date.now().toString(),
+                        type: "editable",
+                        position: { x: 250, y: nodes.length * 120 },
+                        data: {
+                          label: "New Step",
+                          setNodes
+                        }
+                      };
+
+                      setNodes((nds) => [...nds, newNode]);
+                    }}
+                    className="mb-4 px-4 py-2 bg-teal-600 text-white rounded-lg"
+                  >
+                    ➕ Add Step
+                  </button>
+                  <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    nodeTypes={nodeTypes}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={(params) => setEdges((eds) => addEdge(params, eds))}
+                    deleteKeyCode={['Backspace', 'Delete']}
+                    fitView
+                  >
+                    <MiniMap />
+                    <Controls />
+                    <Background gap={12} size={1} />
+                  </ReactFlow>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* DAY CAROUSEL */}
+          {plan.days.length > 0 && (
+            <div className="mt-12">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6">
+                📅 Trip Breakdown
+              </h3>
+              <DayCarousel
+                days={plan.days}
+                setHoveredLocation={(loc) => {
+                  setPreviousLocation(hoveredLocation);
+                  setHoveredLocation(loc);
+                  setRouteCoords([]);
+                  if (
+                    hoveredLocation &&
+                    loc &&
+                    hoveredLocation.lat &&
+                    hoveredLocation.lng &&
+                    loc.lat &&
+                    loc.lng
+                  ) {
+                    fetchRoute(hoveredLocation, loc);
+                  }
+                }}
+                getCoordinates={getCoordinates}
+              />
+            </div>
+          )}
 
         </div>
       </div>
 
-        {/* RIGHT SIDE MAP */}
-        <div className="w-[450px] sticky top-8 h-[600px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <MapContainer
-            center={[20.5937, 78.9629]}
-            zoom={4}
-            style={{ height: "100%", width: "100%" }}
-          >
-            <TileLayer
-              attribution="&copy; OpenStreetMap contributors"
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+      {/* RIGHT SIDE MAP */}
+      <div className="w-[450px] sticky top-8 h-[600px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <MapContainer
+          center={[20.5937, 78.9629]}
+          zoom={4}
+          style={{ height: "100%", width: "100%" }}
+        >
+          <TileLayer
+            attribution="&copy; OpenStreetMap contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
 
-            <MapUpdater location={hoveredLocation} />
+          <MapUpdater location={hoveredLocation} />
 
-            {hoveredLocation && (
-              <Marker position={[hoveredLocation.lat, hoveredLocation.lng]} icon={customIcon}>
-                <Popup>{hoveredLocation.name}</Popup>
-              </Marker>
+          {hoveredLocation && (
+            <Marker position={[hoveredLocation.lat, hoveredLocation.lng]} icon={customIcon}>
+              <Popup>{hoveredLocation.name}</Popup>
+            </Marker>
+          )}
+
+          {Array.isArray(routeCoords) &&
+            routeCoords.length > 1 &&
+            routeCoords.every(p => Array.isArray(p) && p.length === 2) && (
+              <Polyline
+                positions={routeCoords}
+                pathOptions={{ color: "red", weight: 5 }}
+              />
             )}
-
-            {Array.isArray(routeCoords) &&
-              routeCoords.length > 1 &&
-              routeCoords.every(p => Array.isArray(p) && p.length === 2) && (
-                <Polyline
-                  positions={routeCoords}
-                  pathOptions={{ color: "red", weight: 5 }}
-                />
-              )}
-          </MapContainer>
+        </MapContainer>
       </div>
 
     </div>
