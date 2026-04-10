@@ -101,7 +101,7 @@ const handleGenerateTrip = () => {
         
         <div className="container relative z-10 px-4 text-center text-white">
           <span className="inline-block px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-sm font-semibold mb-6 animate-fade-in border border-white/30">
-            ✨ Experience the World
+             Experience the World
           </span>
           <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight text-shadow animate-fade-in">
             Discover Your <br/>
@@ -113,7 +113,7 @@ const handleGenerateTrip = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
             <Link to="/explore" className="px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-full transition-all hover:scale-105 shadow-lg shadow-teal-900/20 flex items-center justify-center gap-2">
-              🌍 Start Exploring
+               Start Exploring
             </Link>
             <Link
   to="/ai-planner"
@@ -126,7 +126,7 @@ const handleGenerateTrip = () => {
   }}
   className="px-8 py-4 bg-white hover:bg-gray-100 text-teal-900 font-bold rounded-full transition-all hover:scale-105 shadow-lg flex items-center justify-center gap-2"
 >
-  🤖 Plan with AI
+   Plan with AI
 </Link>
           </div>
         </div>
@@ -207,7 +207,7 @@ const handleGenerateTrip = () => {
               <button onClick={handleGenerateTrip}
   className="inline-block px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-full transition-all hover:scale-105 shadow-lg"
 >
-  🤖 Generate My Trip
+   Generate My Trip
 </button>
 
             </div>
@@ -216,7 +216,7 @@ const handleGenerateTrip = () => {
             <div className="relative">
               <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl p-6 backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">
-                  ✨ Your AI Itinerary
+                   Your AI Itinerary
                 </h3>
 
                 <div className="space-y-4">
@@ -354,7 +354,7 @@ const handleGenerateTrip = () => {
   onClick={handleStartSharing}
   className="inline-block px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-full transition-all hover:scale-105 shadow-lg"
 >
-  🚀 Start Sharing
+   Start Sharing
 </button>
 
             </div>

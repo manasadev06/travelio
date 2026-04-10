@@ -3,6 +3,8 @@ import { useAuth } from "../context/AuthContext";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 import logo from "../assets/logo.png";
+import "./Navbar.css";
+
 export default function Navbar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -45,7 +47,6 @@ export default function Navbar() {
     setIsMobileMenuOpen(false);
   }
 
-  // ✅ AI Planner Protection
   function handleAIPlannerClick(e) {
     if (!user) {
       e.preventDefault();
@@ -55,220 +56,144 @@ export default function Navbar() {
     }
   }
 
-return (
-  <nav
-    className={`fixed top-0 left-0 w-full h-[70px] z-50 transition-all duration-300 px-4 md:px-8 flex items-center justify-between
-    ${
-      scrolled
-        ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100"
-        : "bg-transparent"
-    }`}
-  >
-    <Link
-      to="C:\Epic Gamez\Mini Project\Travelio\travelio\frontend\public\logo.png"
-      className="text-2xl font-bold text-teal-700 flex items-center gap-2 hover:scale-105 transition-transform"
-    >
-      <img src={logo} alt="logo" className="w-8 h-8 object-contain" />
-       Travelio
-    </Link>
-      <button
-        className="md:hidden text-2xl text-gray-700 p-2 focus:outline-none"
-        onClick={toggleMobileMenu}
-      >
-        {isMobileMenuOpen ? "✕" : "☰"}
-      </button>
+  const getLinkClass = ({ isActive }) =>
+    `nav-link${isActive ? " active" : ""}`;
 
-      {/* Desktop Menu */}
-      <ul className="hidden md:flex items-center gap-1 list-none">
-        <li>
-          <NavLink
-            to="/"
-            className={({ isActive }) =>
-              `px-4 py-2 rounded-full font-medium transition-all ${
-                isActive
-                  ? "bg-teal-50 text-teal-700"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-teal-600"
-              }`
-            }
-          >
-            🏠 Home
-          </NavLink>
-        </li>
+  const getMobileLinkClass = ({ isActive }) =>
+    `mobile-link${isActive ? " active" : ""}`;
 
-        {user && (
+  return (
+    <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
+      <div className="navbar-inner">
+        {/* Logo */}
+        <Link to="/" className="logo-link">
+          <img src={logo} alt="Travelio" className="logo-img" />
+          <span className="logo-text">Travelio</span>
+        </Link>
+
+        {/* Desktop Nav Links */}
+        <ul className="nav-links-desktop">
           <li>
-            <NavLink
-              to="/upload-trip"
-              className={({ isActive }) =>
-                `px-4 py-2 rounded-full font-medium transition-all ${
-                  isActive
-                    ? "bg-teal-50 text-teal-700"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-teal-600"
-                }`
-              }
-            >
-              📤 Upload Trip
+            <NavLink to="/explore" className={getLinkClass} onClick={handleLinkClick}>
+              Explore
             </NavLink>
           </li>
-        )}
+          <li>
+            <NavLink
+              to="/ai-planner"
+              onClick={(e) => {
+                handleAIPlannerClick(e);
+              }}
+              className={getLinkClass}
+            >
+              AI Planner
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/my-trips" className={getLinkClass} onClick={handleLinkClick}>
+              Trips
+            </NavLink>
+          </li>
+        </ul>
 
-        <li>
-          <NavLink
-            to="/ai-planner"
-            onClick={handleAIPlannerClick}
-            className={({ isActive }) =>
-              `px-4 py-2 rounded-full font-medium transition-all ${
-                isActive
-                  ? "bg-teal-50 text-teal-700"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-teal-600"
-              }`
-            }
-          >
-            🤖 AI Planner
-          </NavLink>
-        </li>
-
-        <li>
-          <NavLink
-            to="/explore"
-            className={({ isActive }) =>
-              `px-4 py-2 rounded-full font-medium transition-all ${
-                isActive
-                  ? "bg-teal-50 text-teal-700"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-teal-600"
-              }`
-            }
-          >
-            🌍 Explore
-          </NavLink>
-        </li>
-
-        <li>
-          <NavLink
-            to="/my-trips"
-            className={({ isActive }) =>
-              `px-4 py-2 rounded-full font-medium transition-all ${
-                isActive
-                  ? "bg-teal-50 text-teal-700"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-teal-600"
-              }`
-            }
-          >
-            My-trips
-          </NavLink>
-        </li>
-
-        {!user ? (
-          <>
-            <li className="ml-4">
-              <NavLink
-                to="/login"
-                className="px-5 py-2 font-semibold text-gray-600 hover:text-teal-700 transition-colors"
-              >
+        {/* Actions */}
+        <div className="nav-actions">
+          {!user ? (
+            <>
+              <NavLink to="/login" className="login-btn" onClick={handleLinkClick}>
                 Login
               </NavLink>
-            </li>
-            <li>
-              <Link
-                to="/register"
-                className="px-5 py-2.5 bg-teal-600 text-white rounded-full font-bold shadow-md hover:bg-teal-700 hover:shadow-lg transition-all transform hover:-translate-y-0.5"
-              >
+              <Link to="/register" className="get-started-btn" onClick={handleLinkClick}>
                 Get Started
               </Link>
-            </li>
-          </>
-        ) : (
-          <>
-            <li>
-              <NavLink
-                to="/dashboard"
-                className={({ isActive }) =>
-                  `px-4 py-2 rounded-full font-medium transition-all ${
-                    isActive
-                      ? "bg-teal-50 text-teal-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-teal-600"
-                  }`
-                }
-              >
-                📊 Dashboard
-              </NavLink>
-            </li>
-
-            <li className="ml-2 relative" ref={dropdownRef}>
+            </>
+          ) : (
+            <div className="user-menu-wrapper" ref={dropdownRef}>
               <button
                 onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                className="px-4 py-2 rounded-full font-medium text-gray-600 hover:bg-gray-50 hover:text-teal-600 flex items-center gap-2 transition-all"
+                className="user-menu-btn"
               >
-                👤 {user.name}
-                <span
-                  className={`text-sm transition-transform ${
-                    isUserDropdownOpen ? "rotate-180" : ""
-                  }`}
-                >
-                  ▼
-                </span>
+                {user.name}
+                <span className="caret">▾</span>
               </button>
 
               {isUserDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50">
+                <div className="dropdown-menu">
                   <NavLink
                     to="/profile"
                     onClick={() => setIsUserDropdownOpen(false)}
-                    className="block px-4 py-3 rounded-t-xl text-gray-700 hover:bg-gray-50"
+                    className="dropdown-item"
                   >
-                    👤 My Profile
+                    Profile
                   </NavLink>
-
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-3 rounded-b-xl text-red-600 hover:bg-red-50 font-medium text-sm border-t border-gray-100"
+                  <NavLink
+                    to="/dashboard"
+                    onClick={() => setIsUserDropdownOpen(false)}
+                    className="dropdown-item"
                   >
-                    🚪 Logout
+                    Dashboard
+                  </NavLink>
+                  <div className="dropdown-divider" />
+                  <button onClick={handleLogout} className="dropdown-item logout">
+                    Logout
                   </button>
                 </div>
               )}
-            </li>
-          </>
-        )}
-      </ul>
+            </div>
+          )}
+
+          {/* Mobile Toggle */}
+          <button
+            className="mobile-toggle"
+            onClick={toggleMobileMenu}
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? "✕" : "☰"}
+          </button>
+        </div>
+      </div>
 
       {/* Mobile Menu */}
-      <div
-        className={`absolute top-[70px] left-0 w-full bg-white border-b border-gray-100 shadow-xl flex flex-col p-6 gap-4 md:hidden transition-all duration-300 ease-in-out origin-top
-        ${
-          isMobileMenuOpen
-            ? "opacity-100 scale-y-100"
-            : "opacity-0 scale-y-0 pointer-events-none"
-        }`}
-      >
-        <NavLink
-          to="/"
-          onClick={handleLinkClick}
-          className="p-3 rounded-xl text-gray-600 hover:bg-gray-50"
-        >
-          🏠 Home
+      <div className={`mobile-menu${isMobileMenuOpen ? " open" : ""}`}>
+        <NavLink to="/explore" className={getMobileLinkClass} onClick={handleLinkClick}>
+          Explore
         </NavLink>
-
-        {user && (
-          <NavLink
-            to="/upload-trip"
-            onClick={handleLinkClick}
-            className="p-3 rounded-xl text-gray-600 hover:bg-gray-50"
-          >
-            📤 Upload Trip
-          </NavLink>
-        )}
-
         <NavLink
           to="/ai-planner"
           onClick={(e) => {
             handleAIPlannerClick(e);
             handleLinkClick();
           }}
-          className="p-3 rounded-xl text-gray-600 hover:bg-gray-50"
+          className={getMobileLinkClass}
         >
-          🤖 AI Planner
+          AI Planner
         </NavLink>
+        <NavLink to="/my-trips" className={getMobileLinkClass} onClick={handleLinkClick}>
+          Trips
+        </NavLink>
+
+        {!user ? (
+          <>
+            <NavLink to="/login" className={getMobileLinkClass} onClick={handleLinkClick}>
+              Login
+            </NavLink>
+            <NavLink to="/register" className="mobile-get-started" onClick={handleLinkClick}>
+              Get Started
+            </NavLink>
+          </>
+        ) : (
+          <>
+            <NavLink to="/profile" className={getMobileLinkClass} onClick={handleLinkClick}>
+              Profile
+            </NavLink>
+            <NavLink to="/dashboard" className={getMobileLinkClass} onClick={handleLinkClick}>
+              Dashboard
+            </NavLink>
+            <button onClick={handleLogout} className="mobile-link logout">
+              Logout
+            </button>
+          </>
+        )}
       </div>
     </nav>
   );
