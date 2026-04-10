@@ -32,13 +32,7 @@ function MapUpdater({ location }) {
 
   return null;
 }
-// const locationDB = {
-//   Manali: { lat: 32.2432, lng: 77.1892 },
-//   "Solang Valley": { lat: 32.3168, lng: 77.1569 },
-//   "Rohtang Pass": { lat: 32.3716, lng: 77.2462 },
-//   Delhi: { lat: 28.6139, lng: 77.2090 },
-//   Paris: { lat: 48.8566, lng: 2.3522 }
-// };
+
 
 /* Editable Ellipse Node */
 function EditableNode({ id, data }) {
@@ -207,7 +201,7 @@ export default function AIFlowchart() {
     });
 
     try {
-      const res = await fetch("https://hemanth34.app.n8n.cloud/webhook/get-name", {
+      const res = await fetch("https://manasa15.app.n8n.cloud/webhook/get-name", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),

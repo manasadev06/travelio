@@ -5,7 +5,6 @@ const auth = require("../middleware/auth");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-
 const router = express.Router();
 
 // Configure Multer Storage
