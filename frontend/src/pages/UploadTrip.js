@@ -13,36 +13,31 @@ export default function UploadTrip() {
     destination: "",
     trip_type: "Solo",
     duration: "",
-    
+
     // 2. Trip Description
-    short_summary: "",
     description: "",
-    
+
     // 3. Itinerary
     itinerary: "",
-    
+
     // 4. Budget Details
     total_budget: "",
     accommodation_cost: "",
     travel_cost: "",
     food_misc_cost: "",
-    
+
     // 5. Accommodation
     accommodation_type: "Hotel",
     accommodation_name: "",
-    
+
     // 6. Weather & Best Time
     weather: "Sunny",
     best_time_to_visit: "",
-    
+
     // 7. Media
     cover_image: null,
-    
-    // 8. Tags
-    tags: "",
-    
-    // 9. Visibility
-    is_public: "true", // "true" or "false" string for radio
+
+
   });
 
   const [loading, setLoading] = useState(false);
@@ -74,21 +69,21 @@ export default function UploadTrip() {
     if (!formData.title.trim()) errors.push("Title is required");
     if (!formData.destination.trim()) errors.push("Destination is required");
     if (!formData.duration || formData.duration < 1) errors.push("Valid duration is required");
-    if (!formData.short_summary.trim()) errors.push("Short summary is required");
+
     if (!formData.description.trim()) errors.push("Detailed description is required");
     if (!formData.itinerary.trim()) errors.push("Itinerary is required");
-    
+
     if (!formData.total_budget || formData.total_budget < 0) errors.push("Total budget is required");
     if (!formData.accommodation_cost || formData.accommodation_cost < 0) errors.push("Accommodation cost is required");
     if (!formData.travel_cost || formData.travel_cost < 0) errors.push("Travel cost is required");
     if (!formData.food_misc_cost || formData.food_misc_cost < 0) errors.push("Food & Misc cost is required");
-    
+
     if (!formData.accommodation_type) errors.push("Accommodation type is required");
     if (!formData.weather) errors.push("Weather is required");
     if (!formData.best_time_to_visit.trim()) errors.push("Best time to visit is required");
-    
+
     if (!formData.cover_image) errors.push("Cover image is required");
-    if (!formData.tags.trim()) errors.push("Tags are required");
+
 
     return errors;
   };
@@ -110,14 +105,16 @@ export default function UploadTrip() {
 
     try {
       const data = new FormData();
-      
+
+      // Auto-generate fields removed from UI for backend compatibility
+      const autoSummary = formData.description.trim().substring(0, 150);
+      data.append("short_summary", autoSummary);
+      data.append("tags", JSON.stringify(["Travel"]));
+      data.append("is_public", "true");
+
       // Append text fields
       Object.keys(formData).forEach((key) => {
-        if (key === "tags") {
-          // Parse tags string to array then stringify for backend
-          const tagsArray = formData.tags.split(",").map(tag => tag.trim()).filter(Boolean);
-          data.append("tags", JSON.stringify(tagsArray));
-        } else if (key !== "cover_image") {
+        if (key !== "cover_image") {
           data.append(key, formData[key]);
         }
       });
@@ -136,7 +133,7 @@ export default function UploadTrip() {
 
       setSuccess("Trip uploaded successfully!");
       setLoading(false);
-      
+
       // Navigate after delay
       setTimeout(() => navigate("/explore"), 2000);
     } catch (err) {
@@ -145,7 +142,8 @@ export default function UploadTrip() {
         console.error("Server Error Details:", err.response.data);
       }
       setError(err.response?.data?.message || "Failed to upload trip");
-    } finally {setLoading(false);
+    } finally {
+      setLoading(false);
       window.scrollTo(0, 0);
     }
   };
@@ -169,7 +167,7 @@ export default function UploadTrip() {
             </div>
           </div>
         )}
-        
+
         {success && (
           <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-md shadow-sm animate-fade-in">
             <div className="flex">
@@ -182,7 +180,7 @@ export default function UploadTrip() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          
+
           {/* 1. Trip Basics */}
           <div className="bg-white shadow-lg rounded-2xl p-6 md:p-8 animate-fade-in">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center gap-2">
@@ -245,17 +243,6 @@ export default function UploadTrip() {
             </h2>
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Short Summary</label>
-                <input
-                  name="short_summary"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                  placeholder="Brief overview (1-2 lines)"
-                  value={formData.short_summary}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Detailed Description</label>
                 <textarea
                   name="description"
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all h-32"
@@ -410,7 +397,7 @@ export default function UploadTrip() {
           {/* 7. Media & Tags & Visibility */}
           <div className="bg-white shadow-lg rounded-2xl p-6 md:p-8 animate-fade-in">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center gap-2">
-              <span className="text-teal-600">📷</span> Media & Details
+              <span className="text-teal-600">📷</span> Media
             </h2>
             <div className="space-y-6">
               <div className="space-y-2">
@@ -423,53 +410,14 @@ export default function UploadTrip() {
                 />
                 <p className="text-xs text-gray-500">Upload a cover image for your trip.</p>
               </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Tags</label>
-                <input
-                  name="tags"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                  placeholder="e.g. Budget, Adventure, Beach (comma separated)"
-                  value={formData.tags}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Visibility</label>
-                <div className="flex gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="is_public"
-                      value="true"
-                      checked={formData.is_public === "true"}
-                      onChange={handleInputChange}
-                      className="w-5 h-5 text-teal-600 focus:ring-teal-500 border-gray-300"
-                    />
-                    <span className="text-gray-700">Public</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="is_public"
-                      value="false"
-                      checked={formData.is_public === "false"}
-                      onChange={handleInputChange}
-                      className="w-5 h-5 text-teal-600 focus:ring-teal-500 border-gray-300"
-                    />
-                    <span className="text-gray-700">Private</span>
-                  </label>
-                </div>
-              </div>
             </div>
           </div>
 
           {/* Submit Button */}
           <div className="flex justify-end pt-4">
-            <button 
-              type="submit" 
-              className="w-full md:w-auto px-8 py-4 bg-teal-600 text-white text-lg font-bold rounded-full shadow-lg hover:bg-teal-700 hover:shadow-xl hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2" 
+            <button
+              type="submit"
+              className="w-full md:w-auto px-8 py-4 bg-teal-600 text-white text-lg font-bold rounded-full shadow-lg hover:bg-teal-700 hover:shadow-xl hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
               disabled={loading}
             >
               {loading ? (
