@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/api';
 
 export default function UserProfile() {
   const { id } = useParams();
@@ -13,36 +14,27 @@ export default function UserProfile() {
   const [isOwnProfile, setIsOwnProfile] = useState(false);
 
   useEffect(() => {
-    const isOwn = isAuthenticated && user && parseInt(id) === user.id;
+    const loggedInUserId = user?.id || user?._id;
+    const isOwn = isAuthenticated && loggedInUserId && id === loggedInUserId;
     setIsOwnProfile(isOwn);
-    fetchUserProfile();
-  }, [id, isAuthenticated, user]);
+    fetchUserProfile(isOwn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, isAuthenticated, user?.id, user?._id]);
 
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = async (isOwn = false) => {
     try {
       setLoading(true);
       setError('');
 
-      const endpoint = isOwnProfile ? '/api/user/profile' : `/api/users/${id}`;
-      const token = localStorage.getItem('token');
-      
-      const headers = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      const endpoint = isOwn ? '/user/profile' : `/users/${id}`;
+      const response = await api.get(endpoint);
+      const data = response.data;
 
-      const response = await fetch(`http://localhost:3002${endpoint}`, { headers });
-      const data = await response.json();
-
-      if (response.ok) {
-        setProfileUser(data);
-        setUserTrips(data.trips || []);
-      } else {
-        setError(data.message || 'User not found');
-      }
+      setProfileUser(data);
+      setUserTrips(data.trips || []);
     } catch (error) {
       console.error('Fetch user profile error:', error);
-      setError('Network error. Please try again.');
+      setError(error.response?.data?.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }

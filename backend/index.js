@@ -1,17 +1,15 @@
 const express = require("express");
 const cors = require("cors");
-const mongoose = require("mongoose");
 require("dotenv").config();
 
 const path = require("path");
+const connectDB = require("./config/db");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET;
 
 // -------------------- MONGODB CONNECTION --------------------
-mongoose
-  .connect(process.env.MONGO_URI)
+connectDB()
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err);

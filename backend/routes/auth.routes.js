@@ -8,12 +8,13 @@ const router = express.Router();
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
+    const normalizedEmail = email?.trim().toLowerCase();
 
-    if (!name || !email || !password) {
+    if (!name || !normalizedEmail || !password) {
       return res.status(400).json({ message: "All fields required" });
     }
 
-    const exists = await User.findOne({ email });
+    const exists = await User.findOne({ email: normalizedEmail });
     if (exists) {
       return res.status(400).json({ message: "User already exists" });
     }
@@ -21,24 +22,25 @@ router.post("/register", async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
 
     await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: normalizedEmail,
       password: hash,
       role: role || "user"
     });
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
-  console.error("LOGIN ERROR:", err);
-  res.status(500).json({ error: err.message });
-}
+    console.error("Register error:", err);
+    res.status(500).json({ message: err.message || "Registration failed" });
+  }
 });
 
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email?.trim().toLowerCase();
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }

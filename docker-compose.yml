@@ -2,6 +2,15 @@ version: "3.9"
 
 services:
 
+  mongo:
+    image: mongo:7
+    container_name: travelio-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
   n8n:
     image: n8nio/n8n:latest
     container_name: travelio-n8n
@@ -17,4 +26,5 @@ services:
     restart: unless-stopped
 
 volumes:
+  mongo_data:
   n8n_data:

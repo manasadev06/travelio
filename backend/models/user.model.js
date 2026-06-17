@@ -32,6 +32,12 @@ const userSchema = new mongoose.Schema(
     bio: {
       type: String,
       default: ""
+    },
+
+    points: {
+      type: Number,
+      default: 0,
+      min: 0
     }
   },
   { timestamps: true }

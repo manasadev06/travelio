@@ -1,19 +1,21 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-const savedTripSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true
+const savedTripSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    trip: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Trip",
+      required: true,
+    },
   },
+  { timestamps: true }
+);
 
-  title: String,
-  description: String,
+savedTripSchema.index({ user: 1, trip: 1 }, { unique: true });
 
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-export default mongoose.model("SavedTrip", savedTripSchema);
+module.exports = mongoose.model("SavedTrip", savedTripSchema);
